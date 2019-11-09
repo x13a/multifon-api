@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	Version = "0.0.2"
+	Version = "0.0.3"
 
 	API_MULTIFON = "multifon"
 	API_EMOTION  = "emotion"
@@ -138,13 +138,13 @@ func printUsage() {
 	)
 }
 
+func flagNameToFlag(s string) string {
+	return fmt.Sprint("-", s)
+}
+
 func fatalParseArgs(k, v string) {
 	fmt.Fprintf(os.Stderr, "failed to parse argument %s: \"%s\"\n", k, v)
 	os.Exit(EX_ARG_ERR)
-}
-
-func flagNameToFlag(s string) string {
-	return fmt.Sprint("-", s)
 }
 
 func fatalIfEmptyArg(desc, val string) {
