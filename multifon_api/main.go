@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	Version = "0.0.3"
+	Version = "0.0.4"
 
 	API_MULTIFON = "multifon"
 	API_EMOTION  = "emotion"
@@ -147,12 +147,6 @@ func fatalParseArgs(k, v string) {
 	os.Exit(EX_ARG_ERR)
 }
 
-func fatalIfEmptyArg(desc, val string) {
-	if val == "" {
-		fatalParseArgs(desc, val)
-	}
-}
-
 func parseAPI() {
 	api, ok := API_URL_MAP[strings.ToLower(API)]
 	if !ok {
@@ -187,7 +181,9 @@ func parseCommandArg() {
 		}
 		CommandArg = n
 	case COMMAND_SET_PASSWORD:
-		fatalIfEmptyArg(commandArgMetaVar, arg)
+		if arg == "" {
+			fatalParseArgs(commandArgMetaVar, arg)
+		}
 		CommandArg = arg
 	}
 }
@@ -207,8 +203,12 @@ func parseArgs() {
 		fmt.Println(Version)
 		os.Exit(EX_OK)
 	}
-	fatalIfEmptyArg(flagNameToFlag(loginFlagName), Login)
-	fatalIfEmptyArg(flagNameToFlag(passwordFlagName), Password)
+	if Login == "" {
+		fatalParseArgs(flagNameToFlag(loginFlagName), Login)
+	}
+	if Password == "" {
+		fatalParseArgs(flagNameToFlag(passwordFlagName), Password)
+	}
 	parseAPI()
 	parseCommand()
 	parseCommandArg()
