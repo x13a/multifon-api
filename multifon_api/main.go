@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	Version = "0.0.1"
+	Version = "0.0.2"
 
 	API_MULTIFON = "multifon"
 	API_EMOTION  = "emotion"
@@ -61,7 +61,7 @@ var (
 	apiFlagName      = "api"
 
 	commandMetaVar    = "COMMAND"
-	commandArgMetaVar = "COMMAND_ARGUMENT"
+	commandArgMetaVar = fmt.Sprint(commandMetaVar, "_ARGUMENT")
 )
 
 func getDefaultAPI() string {
@@ -124,8 +124,8 @@ func printUsage() {
 			"  { %s }\n\n"+
 			"%s:\n"+
 			"  %s { %s }\n"+
-			"  %s NUMBER (2 .. 20)\n"+
-			"  %s NEW_%s (min 8, max 20, mixed case, digits)\n",
+			"  %s <NUMBER> (2 .. 20)\n"+
+			"  %s <NEW_%s> (min 8, max 20, mixed case, digits)\n",
 		name, helpFlagName, versionFlagName, loginFlagName, passwordFlagName,
 		passwordMetaVar, apiFlagName, apiMetaVar,
 		strings.Repeat(" ", len(name)), commandMetaVar, commandArgMetaVar,
