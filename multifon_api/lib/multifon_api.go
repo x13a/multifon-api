@@ -21,8 +21,6 @@ const (
 
 	STATUS_ACTIVE  = 0
 	STATUS_BLOCKED = 1
-
-	strUndefined = "undefined"
 )
 
 var ROUTING_DESCRIPTION_MAP = map[int]string{
@@ -64,7 +62,7 @@ func (s *ResponseRouting) Description() string {
 	if v, ok := ROUTING_DESCRIPTION_MAP[s.Routing]; ok {
 		return v
 	}
-	return strUndefined
+	return ""
 }
 
 type ResponseStatus struct {
@@ -80,7 +78,7 @@ func (s *ResponseStatus) Description() string {
 	case STATUS_BLOCKED:
 		return "blocked"
 	default:
-		return strUndefined
+		return ""
 	}
 }
 

@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	Version = "0.0.4"
+	Version = "0.0.5"
 
 	API_MULTIFON = "multifon"
 	API_EMOTION  = "emotion"
@@ -232,7 +232,12 @@ func main() {
 	case COMMAND_GET_ROUTING:
 		res, err := client.GetRouting()
 		fatalIfErr(err)
-		fmt.Println(res.Description())
+		val := res.Description()
+		if val == "" {
+			fmt.Println(res.Routing)
+		} else {
+			fmt.Println(val)
+		}
 	case COMMAND_SET_ROUTING:
 		_, err := client.SetRouting(CommandArg.(int))
 		fatalIfErr(err)
@@ -241,6 +246,9 @@ func main() {
 		res, err := client.GetStatus()
 		fatalIfErr(err)
 		val := res.Description()
+		if val == "" {
+			val = strconv.Itoa(res.Status)
+		}
 		if res.Expires != "" {
 			val = fmt.Sprint(val, "|", res.Expires)
 		}
