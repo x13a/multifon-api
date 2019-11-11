@@ -15,10 +15,7 @@ import (
 )
 
 const (
-	Version = "0.0.6"
-
-	API_MULTIFON = "multifon"
-	API_EMOTION  = "emotion"
+	Version = "0.0.7"
 
 	COMMAND_BALANCE      = "balance"
 	COMMAND_GET_ROUTING  = "get-routing"
@@ -36,8 +33,8 @@ const (
 
 var (
 	API_URL_MAP = map[string]string{
-		API_MULTIFON: multifonapi.MULTIFON_API_URL,
-		API_EMOTION:  multifonapi.EMOTION_API_URL,
+		"multifon": multifonapi.MULTIFON_API_URL,
+		"emotion":  multifonapi.EMOTION_API_URL,
 	}
 
 	AVAILABLE_COMMANDS = [...]string{
