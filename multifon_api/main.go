@@ -3,17 +3,19 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	multifonapi "./lib"
 )
 
 const (
-	Version = "0.0.5"
+	Version = "0.0.6"
 
 	API_MULTIFON = "multifon"
 	API_EMOTION  = "emotion"
@@ -52,6 +54,7 @@ var (
 	Login      string
 	Password   string
 	API        string
+	Timeout    time.Duration
 	Command    string
 	CommandArg interface{}
 
@@ -59,6 +62,7 @@ var (
 	loginFlagName    = "login"
 	passwordFlagName = "password"
 	apiFlagName      = "api"
+	timeoutFlagName  = "timeout"
 
 	commandMetaVar    = "COMMAND"
 	commandArgMetaVar = fmt.Sprint(commandMetaVar, "_ARGUMENT")
@@ -107,6 +111,7 @@ func printUsage() {
 	helpFlagName := "h"
 	passwordMetaVar := "PASSWORD"
 	apiMetaVar := "API"
+	timeoutMetaVar := "TIMEOUT"
 	apis := getAPIs()
 	sort.Strings(apis)
 	routingDescriptions := getRoutingDescriptions()
@@ -114,12 +119,14 @@ func printUsage() {
 	choicesDelimiter := " | "
 	fmt.Fprintf(
 		flag.CommandLine.Output(),
-		"%s [-%s] [-%s] -%s <LOGIN> -%s <%s> [-%s <%s>] \n"+
+		"%s [-%s] [-%s] -%s <LOGIN> -%s <%s> [-%s <%s>] [-%s <%s>] \n"+
 			"%s <%s> [<%s>]\n\n"+
 			"[-%s] * Print help and exit\n"+
 			"[-%s] * Print version and exit\n\n"+
 			"%s:\n"+
 			"  { %s } (default: %s)\n\n"+
+			"%s:\n"+
+			"  :time.ParseDuration: (default: %s)\n\n"+
 			"%s:\n"+
 			"  { %s }\n\n"+
 			"%s:\n"+
@@ -127,10 +134,11 @@ func printUsage() {
 			"  %s <NUMBER> (2 .. 20)\n"+
 			"  %s <NEW_%s> (min 8, max 20, mixed case, digits)\n",
 		name, helpFlagName, versionFlagName, loginFlagName, passwordFlagName,
-		passwordMetaVar, apiFlagName, apiMetaVar,
-		strings.Repeat(" ", len(name)), commandMetaVar, commandArgMetaVar,
-		helpFlagName, versionFlagName, apiMetaVar,
-		strings.Join(apis, choicesDelimiter), getDefaultAPI(), commandMetaVar,
+		passwordMetaVar, apiFlagName, apiMetaVar, timeoutFlagName,
+		timeoutMetaVar, strings.Repeat(" ", len(name)), commandMetaVar,
+		commandArgMetaVar, helpFlagName, versionFlagName, apiMetaVar,
+		strings.Join(apis, choicesDelimiter), getDefaultAPI(), timeoutMetaVar,
+		multifonapi.DEFAULT_TIMEOUT, commandMetaVar,
 		strings.Join(AVAILABLE_COMMANDS[:], choicesDelimiter),
 		commandArgMetaVar, COMMAND_SET_ROUTING,
 		strings.Join(routingDescriptions, choicesDelimiter), COMMAND_SET_LINES,
@@ -198,6 +206,12 @@ func parseArgs() {
 	flag.StringVar(&Login, loginFlagName, "", "")
 	flag.StringVar(&Password, passwordFlagName, "", "")
 	flag.StringVar(&API, apiFlagName, getDefaultAPI(), "")
+	flag.DurationVar(
+		&Timeout,
+		timeoutFlagName,
+		multifonapi.DEFAULT_TIMEOUT,
+		"",
+	)
 	flag.Parse()
 	if *isVersion {
 		fmt.Println(Version)
@@ -216,7 +230,12 @@ func parseArgs() {
 
 func main() {
 	parseArgs()
-	client := multifonapi.NewClient(Login, Password, API, nil)
+	client := multifonapi.NewClient(
+		Login,
+		Password,
+		API,
+		&http.Client{Timeout: Timeout},
+	)
 	fatalIfErr := func(e error) {
 		if e != nil {
 			fmt.Println(e)

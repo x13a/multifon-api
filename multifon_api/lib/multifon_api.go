@@ -21,6 +21,8 @@ const (
 
 	STATUS_ACTIVE  = 0
 	STATUS_BLOCKED = 1
+
+	DEFAULT_TIMEOUT = 30 * time.Second
 )
 
 var ROUTING_DESCRIPTION_MAP = map[int]string{
@@ -239,7 +241,7 @@ func NewClient(
 		apiUrl = DEFAULT_API_URL
 	}
 	if httpClient == nil {
-		httpClient = &http.Client{Timeout: 30 * time.Second}
+		httpClient = &http.Client{Timeout: DEFAULT_TIMEOUT}
 	}
 	return &Client{
 		httpClient: httpClient,
