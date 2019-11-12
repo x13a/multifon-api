@@ -43,9 +43,9 @@ type ResponseResult struct {
 	} `xml:"result"`
 }
 
-func (s *ResponseResult) ResultError() error {
-	if s.Result.Code != http.StatusOK {
-		return errors.New(s.Result.Description)
+func (r *ResponseResult) ResultError() error {
+	if r.Result.Code != http.StatusOK {
+		return errors.New(r.Result.Description)
 	}
 	return nil
 }
@@ -60,8 +60,8 @@ type ResponseRouting struct {
 	Routing int `xml:"routing"`
 }
 
-func (s *ResponseRouting) Description() string {
-	if v, ok := ROUTING_DESCRIPTION_MAP[s.Routing]; ok {
+func (r *ResponseRouting) Description() string {
+	if v, ok := ROUTING_DESCRIPTION_MAP[r.Routing]; ok {
 		return v
 	}
 	return ""
@@ -73,8 +73,8 @@ type ResponseStatus struct {
 	Expires string `xml:"expires"` // [U]Int?
 }
 
-func (s *ResponseStatus) Description() string {
-	switch s.Status {
+func (r *ResponseStatus) Description() string {
+	switch r.Status {
 	case STATUS_ACTIVE:
 		return "active"
 	case STATUS_BLOCKED:
@@ -110,11 +110,11 @@ type Client struct {
 	apiUrl     string
 }
 
-func (s *Client) Request(
+func (c *Client) Request(
 	urlPath string,
 	params map[string]string,
 ) ([]byte, error) {
-	reqUrl, err := urlJoin(s.apiUrl, urlPath)
+	reqUrl, err := urlJoin(c.apiUrl, urlPath)
 	if err != nil {
 		return nil, err
 	}
@@ -123,15 +123,13 @@ func (s *Client) Request(
 		return nil, err
 	}
 	q := req.URL.Query()
-	q.Add("login", s.login)
-	q.Add("password", s.password)
-	if params != nil {
-		for k, v := range params {
-			q.Add(k, v)
-		}
+	q.Add("login", c.login)
+	q.Add("password", c.password)
+	for k, v := range params {
+		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
-	resp, err := s.httpClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -146,12 +144,12 @@ func (s *Client) Request(
 	return buf, nil
 }
 
-func (s *Client) Do(
+func (c *Client) Do(
 	urlPath string,
 	params map[string]string,
 	data Response,
 ) error {
-	buf, err := s.Request(urlPath, params)
+	buf, err := c.Request(urlPath, params)
 	if err != nil {
 		return err
 	}
@@ -164,56 +162,56 @@ func (s *Client) Do(
 	return nil
 }
 
-func (s *Client) GetBalance() (*ResponseBalance, error) {
+func (c *Client) GetBalance() (*ResponseBalance, error) {
 	data := &ResponseBalance{}
-	return data, s.Do("balance", nil, data)
+	return data, c.Do("balance", nil, data)
 }
 
-func (s *Client) GetRouting() (*ResponseRouting, error) {
+func (c *Client) GetRouting() (*ResponseRouting, error) {
 	data := &ResponseRouting{}
-	return data, s.Do("routing", nil, data)
+	return data, c.Do("routing", nil, data)
 }
 
 /*
 ROUTING_GSM, ROUTING_SIP, ROUTING_SIP_GSM
 */
-func (s *Client) SetRouting(routing int) (*ResponseRouting, error) {
+func (c *Client) SetRouting(routing int) (*ResponseRouting, error) {
 	k := "routing"
 	v := -1
 	data := &ResponseRouting{Routing: v}
-	err := s.Do(k, map[string]string{k: strconv.Itoa(routing)}, data)
+	err := c.Do(k, map[string]string{k: strconv.Itoa(routing)}, data)
 	if err == nil && data.Routing != v {
 		err = newSetFailedError(k, routing, data.Routing)
 	}
 	return data, err
 }
 
-func (s *Client) GetStatus() (*ResponseStatus, error) {
+func (c *Client) GetStatus() (*ResponseStatus, error) {
 	data := &ResponseStatus{}
-	return data, s.Do("status", nil, data)
+	return data, c.Do("status", nil, data)
 }
 
 /*
 outdated?
 */
-func (s *Client) GetProfile() (*ResponseProfile, error) {
+func (c *Client) GetProfile() (*ResponseProfile, error) {
 	data := &ResponseProfile{}
-	return data, s.Do("profile", nil, data)
+	return data, c.Do("profile", nil, data)
 }
 
-func (s *Client) GetLines() (*ResponseLines, error) {
+func (c *Client) GetLines() (*ResponseLines, error) {
 	data := &ResponseLines{}
-	return data, s.Do("lines", nil, data)
+	return data, c.Do("lines", nil, data)
 }
 
 /*
 2 .. 20
 */
-func (s *Client) SetLines(n int) (*ResponseLines, error) {
+func (c *Client) SetLines(n int) (*ResponseLines, error) {
 	k := "lines"
 	v := -1
 	data := &ResponseLines{Lines: v}
-	err := s.Do(k, map[string]string{k: strconv.Itoa(n)}, data)
+	err := c.Do(k, map[string]string{k: strconv.Itoa(n)}, data)
 	if err == nil && data.Lines != v {
 		err = newSetFailedError(k, n, data.Lines)
 	}
@@ -224,11 +222,11 @@ func (s *Client) SetLines(n int) (*ResponseLines, error) {
 min 8, max 20, mixed case, digits
 can return error and.. change password on server?
 */
-func (s *Client) SetPassword(password string) (*ResponseResult, error) {
+func (c *Client) SetPassword(password string) (*ResponseResult, error) {
 	data := &ResponseResult{}
-	err := s.Do("password", map[string]string{"new_password": password}, data)
+	err := c.Do("password", map[string]string{"new_password": password}, data)
 	if err == nil {
-		s.password = password
+		c.password = password
 	}
 	return data, err
 }

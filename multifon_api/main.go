@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Version = "0.0.7"
+	Version = "0.0.8"
 
 	COMMAND_BALANCE      = "balance"
 	COMMAND_GET_ROUTING  = "get-routing"
@@ -143,8 +143,8 @@ func printUsage() {
 	)
 }
 
-func flagNameToFlag(s string) string {
-	return fmt.Sprint("-", s)
+func flagNameToFlag(name string) string {
+	return fmt.Sprint("-", name)
 }
 
 func fatalParseArgs(k, v string) {
@@ -233,9 +233,9 @@ func main() {
 		API,
 		&http.Client{Timeout: Timeout},
 	)
-	fatalIfErr := func(e error) {
-		if e != nil {
-			fmt.Println(e)
+	fatalIfErr := func(err error) {
+		if err != nil {
+			fmt.Println(err)
 			os.Exit(EX_ERR)
 		}
 	}
