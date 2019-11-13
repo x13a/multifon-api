@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Version = "0.0.8"
+	Version = "0.0.9"
 
 	COMMAND_BALANCE      = "balance"
 	COMMAND_GET_ROUTING  = "get-routing"
@@ -104,7 +104,12 @@ func getRoutingByDescription(s string) int {
 }
 
 func printUsage() {
-	name := path.Base(os.Args[0])
+	var name string
+	if len(os.Args) < 1 {
+		name = "PROG_NAME"
+	} else {
+		name = path.Base(os.Args[0])
+	}
 	helpFlagName := "h"
 	passwordMetaVar := "PASSWORD"
 	apiMetaVar := "API"
