@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Version = "0.0.9"
+	Version = "0.0.10"
 
 	COMMAND_BALANCE      = "balance"
 	COMMAND_GET_ROUTING  = "get-routing"
@@ -32,11 +32,6 @@ const (
 )
 
 var (
-	API_URL_MAP = map[string]string{
-		"multifon": multifonapi.MULTIFON_API_URL,
-		"emotion":  multifonapi.EMOTION_API_URL,
-	}
-
 	AVAILABLE_COMMANDS = [...]string{
 		COMMAND_BALANCE,
 		COMMAND_GET_ROUTING,
@@ -66,7 +61,7 @@ var (
 )
 
 func getDefaultAPI() string {
-	for k, v := range API_URL_MAP {
+	for k, v := range multifonapi.API_NAME_URL_MAP {
 		if v == multifonapi.DEFAULT_API_URL {
 			return k
 		}
@@ -75,9 +70,9 @@ func getDefaultAPI() string {
 }
 
 func getAPIs() []string {
-	res := make([]string, len(API_URL_MAP))
+	res := make([]string, len(multifonapi.API_NAME_URL_MAP))
 	i := 0
-	for k := range API_URL_MAP {
+	for k := range multifonapi.API_NAME_URL_MAP {
 		res[i] = k
 		i++
 	}
@@ -153,12 +148,12 @@ func flagNameToFlag(name string) string {
 }
 
 func fatalParseArgs(k, v string) {
-	fmt.Fprintf(os.Stderr, "failed to parse argument %s: \"%s\"\n", k, v)
+	fmt.Fprintf(os.Stderr, "Failed to parse argument %s: \"%s\"\n", k, v)
 	os.Exit(EX_ARG_ERR)
 }
 
 func parseAPI() {
-	api, ok := API_URL_MAP[strings.ToLower(API)]
+	api, ok := multifonapi.API_NAME_URL_MAP[strings.ToLower(API)]
 	if !ok {
 		fatalParseArgs(flagNameToFlag(apiFlagName), API)
 	}

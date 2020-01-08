@@ -25,11 +25,17 @@ const (
 	DEFAULT_TIMEOUT = 30 * time.Second
 )
 
-var ROUTING_DESCRIPTION_MAP = map[int]string{
-	ROUTING_GSM:     "GSM",
-	ROUTING_SIP:     "SIP",
-	ROUTING_SIP_GSM: "SIP+GSM",
-}
+var (
+	API_NAME_URL_MAP = map[string]string{
+		"multifon": MULTIFON_API_URL,
+		"emotion":  EMOTION_API_URL,
+	}
+	ROUTING_DESCRIPTION_MAP = map[int]string{
+		ROUTING_GSM:     "GSM",
+		ROUTING_SIP:     "SIP",
+		ROUTING_SIP_GSM: "SIP+GSM",
+	}
+)
 
 type Response interface {
 	ResultError() error
