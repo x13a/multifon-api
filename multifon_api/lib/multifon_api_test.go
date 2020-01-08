@@ -13,9 +13,7 @@ import (
 
 var (
 	CONFIGURATION_FILEPATH = filepath.Join("testdata", "conf.json")
-
-	Config  Configuration
-	Clients = make(map[string]*Client, len(API_NAME_URL_MAP))
+	Config                 Configuration
 )
 
 type DescriptionResponse interface {
@@ -48,8 +46,9 @@ func call(obj interface{}, name string, args ...interface{}) []reflect.Value {
 }
 
 func get(t *testing.T, fnName string) {
-	for k, c := range Clients {
+	for k, v := range API_NAME_URL_MAP {
 		t.Run(k, func(t *testing.T) {
+			c := NewClient(Config.Login, Config.Password, v, nil)
 			res := call(c, fnName)
 			if err, ok := res[1].Interface().(error); ok && err != nil {
 				t.Fatal(err)
@@ -75,18 +74,19 @@ func set(t *testing.T, fnName string, values []int) {
 		}
 		return true
 	}
-	for k, c := range Clients {
+	for k, v := range API_NAME_URL_MAP {
 		t.Run(k, func(t *testing.T) {
+			c := NewClient(Config.Login, Config.Password, v, nil)
 			res := call(c, getFnName)
 			if err, ok := res[1].Interface().(error); ok && err != nil {
 				t.Fatal(err)
 			}
 			initVal := res[0].Elem().FieldByName(name).Interface().(int)
-			for _, v := range values {
-				if v == initVal {
+			for _, val := range values {
+				if val == initVal {
 					continue
 				}
-				_set(t, c, v)
+				_set(t, c, val)
 				time.Sleep(1 * time.Second)
 			}
 			_set(t, c, initVal)
@@ -103,9 +103,6 @@ func TestMain(m *testing.M) {
 	}
 	if Config.Password == "" {
 		log.Fatal("password required")
-	}
-	for k, v := range API_NAME_URL_MAP {
-		Clients[k] = NewClient(Config.Login, Config.Password, v, nil)
 	}
 	os.Exit(m.Run())
 }
@@ -142,8 +139,9 @@ func TestSetPassword(t *testing.T) {
 	if Config.NewPassword == "" {
 		t.Fatal("new_password required")
 	}
-	for k, c := range Clients {
+	for k, v := range API_NAME_URL_MAP {
 		t.Run(k, func(t *testing.T) {
+			c := NewClient(Config.Login, Config.Password, v, nil)
 			for _, passwd := range [...]string{
 				Config.NewPassword,
 				Config.Password,
