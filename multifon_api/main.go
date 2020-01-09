@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Version = "0.0.11"
+	Version = "0.0.12"
 
 	COMMAND_BALANCE      = "balance"
 	COMMAND_GET_ROUTING  = "get-routing"
@@ -103,7 +103,7 @@ func printUsage() {
 	if len(os.Args) < 1 {
 		name = "PROG_NAME"
 	} else {
-		name = path.Base(os.Args[0])
+		name = filepath.Base(os.Args[0])
 	}
 	helpFlagName := "h"
 	passwordMetaVar := "PASSWORD"
