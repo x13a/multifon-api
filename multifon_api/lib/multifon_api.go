@@ -2,7 +2,6 @@ package multifonapi
 
 import (
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -37,6 +36,24 @@ var (
 	}
 )
 
+type ResultError struct {
+	Code        int
+	Description string
+}
+
+func (e *ResultError) Error() string {
+	return fmt.Sprintf("%d: %s", e.Code, e.Description)
+}
+
+type HTTPStatusError struct {
+	Code   int
+	Status string
+}
+
+func (e *HTTPStatusError) Error() string {
+	return e.Status
+}
+
 type Response interface {
 	ResultError() error
 }
@@ -51,7 +68,10 @@ type ResponseResult struct {
 
 func (r *ResponseResult) ResultError() error {
 	if r.Result.Code != http.StatusOK {
-		return errors.New(r.Result.Description)
+		return &ResultError{
+			Code:        r.Result.Code,
+			Description: r.Result.Description,
+		}
 	}
 	return nil
 }
@@ -141,7 +161,10 @@ func (c *Client) Request(
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < 600 {
-		return nil, errors.New(resp.Status)
+		return nil, &HTTPStatusError{
+			Code:   resp.StatusCode,
+			Status: resp.Status,
+		}
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

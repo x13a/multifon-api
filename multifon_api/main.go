@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Version = "0.0.12"
+	Version = "0.0.13"
 
 	COMMAND_BALANCE      = "balance"
 	COMMAND_GET_ROUTING  = "get-routing"
@@ -235,7 +235,7 @@ func main() {
 	)
 	fatalIfErr := func(err error) {
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(EX_ERR)
 		}
 	}
@@ -266,7 +266,7 @@ func main() {
 			val = strconv.Itoa(res.Status)
 		}
 		if res.Expires != "" {
-			val = fmt.Sprint(val, "|", res.Expires)
+			val = fmt.Sprintf("%s:%s", val, res.Expires)
 		}
 		fmt.Println(val)
 	case COMMAND_PROFILE:
