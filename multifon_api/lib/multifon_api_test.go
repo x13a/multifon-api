@@ -12,21 +12,21 @@ import (
 )
 
 var (
-	CONFIGURATION_FILEPATH = filepath.Join("testdata", "conf.json")
-	Config                 Configuration
+	TestConfPath = filepath.Join("testdata", "conf.json")
+	Config       TestConf
 )
 
 type DescriptionResponse interface {
 	Description() string
 }
 
-type Configuration struct {
+type TestConf struct {
 	Login, Password string
 	NewPassword     string `json:"new_password"`
 }
 
-func loadConfiguration() error {
-	file, err := os.Open(CONFIGURATION_FILEPATH)
+func loadTestConf() error {
+	file, err := os.Open(TestConfPath)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func set(t *testing.T, fnName string, values []int) {
 }
 
 func TestMain(m *testing.M) {
-	if err := loadConfiguration(); err != nil {
+	if err := loadTestConf(); err != nil {
 		log.Fatal(err)
 	}
 	if Config.Login == "" {

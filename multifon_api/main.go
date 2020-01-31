@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Version = "0.0.13"
+	Version = "0.0.14"
 
 	COMMAND_BALANCE      = "balance"
 	COMMAND_GET_ROUTING  = "get-routing"
