@@ -46,9 +46,9 @@ func call(obj interface{}, name string, args ...interface{}) []reflect.Value {
 }
 
 func get(t *testing.T, fnName string) {
-	for k, v := range API_NAME_URL_MAP {
+	for k := range API_NAME_URL_MAP {
 		t.Run(k, func(t *testing.T) {
-			c := NewClient(Config.Login, Config.Password, v, nil)
+			c := NewClient(Config.Login, Config.Password, k, nil)
 			res := call(c, fnName)
 			if err, ok := res[1].Interface().(error); ok && err != nil {
 				t.Fatal(err)
@@ -74,9 +74,9 @@ func set(t *testing.T, fnName string, values []int) {
 		}
 		return true
 	}
-	for k, v := range API_NAME_URL_MAP {
+	for k := range API_NAME_URL_MAP {
 		t.Run(k, func(t *testing.T) {
-			c := NewClient(Config.Login, Config.Password, v, nil)
+			c := NewClient(Config.Login, Config.Password, k, nil)
 			res := call(c, getFnName)
 			if err, ok := res[1].Interface().(error); ok && err != nil {
 				t.Fatal(err)
@@ -139,9 +139,9 @@ func TestSetPassword(t *testing.T) {
 	if Config.NewPassword == "" {
 		t.Fatal("new_password required")
 	}
-	for k, v := range API_NAME_URL_MAP {
+	for k := range API_NAME_URL_MAP {
 		t.Run(k, func(t *testing.T) {
-			c := NewClient(Config.Login, Config.Password, v, nil)
+			c := NewClient(Config.Login, Config.Password, k, nil)
 			for _, passwd := range [...]string{
 				Config.NewPassword,
 				Config.Password,

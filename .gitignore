@@ -1,1 +1,2 @@
-conf.json
+/target/
+/src/lib/testdata/conf.json

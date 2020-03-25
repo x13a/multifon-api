@@ -15,15 +15,13 @@ import (
 )
 
 const (
-	Version = "0.0.14"
+	Version = "0.0.15"
 
 	COMMAND_BALANCE      = "balance"
-	COMMAND_GET_ROUTING  = "get-routing"
-	COMMAND_SET_ROUTING  = "set-routing"
+	COMMAND_ROUTING      = "routing"
 	COMMAND_STATUS       = "status"
 	COMMAND_PROFILE      = "profile"
-	COMMAND_GET_LINES    = "get-lines"
-	COMMAND_SET_LINES    = "set-lines"
+	COMMAND_LINES        = "lines"
 	COMMAND_SET_PASSWORD = "set-password"
 
 	EX_OK      = 0
@@ -34,12 +32,10 @@ const (
 var (
 	AVAILABLE_COMMANDS = [...]string{
 		COMMAND_BALANCE,
-		COMMAND_GET_ROUTING,
-		COMMAND_SET_ROUTING,
+		COMMAND_ROUTING,
 		COMMAND_STATUS,
 		COMMAND_PROFILE,
-		COMMAND_GET_LINES,
-		COMMAND_SET_LINES,
+		COMMAND_LINES,
 		COMMAND_SET_PASSWORD,
 	}
 
@@ -59,15 +55,6 @@ var (
 	commandMetaVar    = "COMMAND"
 	commandArgMetaVar = fmt.Sprint(commandMetaVar, "_ARGUMENT")
 )
-
-func getDefaultAPI() string {
-	for k, v := range multifonapi.API_NAME_URL_MAP {
-		if v == multifonapi.DEFAULT_API_URL {
-			return k
-		}
-	}
-	return ""
-}
 
 func getAPIs() []string {
 	res := make([]string, len(multifonapi.API_NAME_URL_MAP))
@@ -105,6 +92,7 @@ func printUsage() {
 	} else {
 		name = filepath.Base(os.Args[0])
 	}
+	namePadding := strings.Repeat(" ", len(name))
 	helpFlagName := "h"
 	passwordMetaVar := "PASSWORD"
 	apiMetaVar := "API"
@@ -116,14 +104,15 @@ func printUsage() {
 	choicesDelimiter := " | "
 	fmt.Fprintf(
 		flag.CommandLine.Output(),
-		"%s [-%s] [-%s] -%s <LOGIN> -%s <%s> [-%s <%s>] [-%s <%s>] \n"+
+		"%s [-%s%s] -%s <LOGIN> -%s <%s>\n"+
+			"%s [-%s <%s>] [-%s <%s>]\n"+
 			"%s <%s> [<%s>]\n\n"+
 			"[-%s] * Print help and exit\n"+
 			"[-%s] * Print version and exit\n\n"+
 			"%s:\n"+
 			"  { %s } (default: %s)\n\n"+
 			"%s:\n"+
-			"  :time.ParseDuration: (default: %s)\n\n"+
+			"  time.ParseDuration (default: %s)\n\n"+
 			"%s:\n"+
 			"  { %s }\n\n"+
 			"%s:\n"+
@@ -131,14 +120,14 @@ func printUsage() {
 			"  %s <NUMBER> (2 .. 20)\n"+
 			"  %s <NEW_%s> (min 8, max 20, mixed case, digits)\n",
 		name, helpFlagName, versionFlagName, loginFlagName, passwordFlagName,
-		passwordMetaVar, apiFlagName, apiMetaVar, timeoutFlagName,
-		timeoutMetaVar, strings.Repeat(" ", len(name)), commandMetaVar,
-		commandArgMetaVar, helpFlagName, versionFlagName, apiMetaVar,
-		strings.Join(apis, choicesDelimiter), getDefaultAPI(), timeoutMetaVar,
-		multifonapi.DEFAULT_TIMEOUT, commandMetaVar,
+		passwordMetaVar, namePadding, apiFlagName, apiMetaVar, timeoutFlagName,
+		timeoutMetaVar, namePadding, commandMetaVar, commandArgMetaVar,
+		helpFlagName, versionFlagName, apiMetaVar,
+		strings.Join(apis, choicesDelimiter), multifonapi.API_DEFAULT,
+		timeoutMetaVar, multifonapi.DEFAULT_TIMEOUT, commandMetaVar,
 		strings.Join(AVAILABLE_COMMANDS[:], choicesDelimiter),
-		commandArgMetaVar, COMMAND_SET_ROUTING,
-		strings.Join(routingDescriptions, choicesDelimiter), COMMAND_SET_LINES,
+		commandArgMetaVar, COMMAND_ROUTING,
+		strings.Join(routingDescriptions, choicesDelimiter), COMMAND_LINES,
 		COMMAND_SET_PASSWORD, passwordMetaVar,
 	)
 }
@@ -153,11 +142,10 @@ func fatalParseArgs(k, v string) {
 }
 
 func parseAPI() {
-	api, ok := multifonapi.API_NAME_URL_MAP[strings.ToLower(API)]
-	if !ok {
+	API = strings.ToLower(API)
+	if _, ok := multifonapi.API_NAME_URL_MAP[API]; !ok {
 		fatalParseArgs(flagNameToFlag(apiFlagName), API)
 	}
-	API = api
 }
 
 func parseCommand() {
@@ -173,13 +161,19 @@ func parseCommand() {
 func parseCommandArg() {
 	arg := flag.Arg(1)
 	switch Command {
-	case COMMAND_SET_ROUTING:
+	case COMMAND_ROUTING:
+		if arg == "" {
+			return
+		}
 		routing := getRoutingByDescription(strings.ToUpper(arg))
 		if routing == -1 {
 			fatalParseArgs(commandArgMetaVar, arg)
 		}
 		CommandArg = routing
-	case COMMAND_SET_LINES:
+	case COMMAND_LINES:
+		if arg == "" {
+			return
+		}
 		n, err := strconv.Atoi(arg)
 		if err != nil {
 			fatalParseArgs(commandArgMetaVar, arg)
@@ -202,7 +196,7 @@ func parseArgs() {
 	isVersion := flag.Bool(versionFlagName, false, "")
 	flag.StringVar(&Login, loginFlagName, "", "")
 	flag.StringVar(&Password, passwordFlagName, "", "")
-	flag.StringVar(&API, apiFlagName, getDefaultAPI(), "")
+	flag.StringVar(&API, apiFlagName, multifonapi.API_DEFAULT, "")
 	flag.DurationVar(
 		&Timeout,
 		timeoutFlagName,
@@ -245,19 +239,21 @@ func main() {
 		res, err := client.GetBalance()
 		fatalIfErr(err)
 		fmt.Println(res.Balance)
-	case COMMAND_GET_ROUTING:
-		res, err := client.GetRouting()
-		fatalIfErr(err)
-		val := res.Description()
-		if val == "" {
-			fmt.Println(res.Routing)
+	case COMMAND_ROUTING:
+		if CommandArg == nil {
+			res, err := client.GetRouting()
+			fatalIfErr(err)
+			val := res.Description()
+			if val == "" {
+				fmt.Println(res.Routing)
+			} else {
+				fmt.Println(val)
+			}
 		} else {
-			fmt.Println(val)
+			_, err := client.SetRouting(CommandArg.(int))
+			fatalIfErr(err)
+			fmt.Println(strOk)
 		}
-	case COMMAND_SET_ROUTING:
-		_, err := client.SetRouting(CommandArg.(int))
-		fatalIfErr(err)
-		fmt.Println(strOk)
 	case COMMAND_STATUS:
 		res, err := client.GetStatus()
 		fatalIfErr(err)
@@ -273,14 +269,16 @@ func main() {
 		res, err := client.GetProfile()
 		fatalIfErr(err)
 		fmt.Println(res.MSISDN)
-	case COMMAND_GET_LINES:
-		res, err := client.GetLines()
-		fatalIfErr(err)
-		fmt.Println(res.Lines)
-	case COMMAND_SET_LINES:
-		_, err := client.SetLines(CommandArg.(int))
-		fatalIfErr(err)
-		fmt.Println(strOk)
+	case COMMAND_LINES:
+		if CommandArg == nil {
+			res, err := client.GetLines()
+			fatalIfErr(err)
+			fmt.Println(res.Lines)
+		} else {
+			_, err := client.SetLines(CommandArg.(int))
+			fatalIfErr(err)
+			fmt.Println(strOk)
+		}
 	case COMMAND_SET_PASSWORD:
 		_, err := client.SetPassword(CommandArg.(string))
 		fatalIfErr(err)

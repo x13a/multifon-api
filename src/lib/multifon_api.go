@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	MULTIFON_API_URL = "https://sm.megafon.ru/sm/client/"
-	EMOTION_API_URL  = "https://emotion.megalabs.ru/sm/client/"
-	DEFAULT_API_URL  = MULTIFON_API_URL
+	API_MULTIFON = "multifon"
+	API_EMOTION  = "emotion"
+	API_DEFAULT  = API_MULTIFON
 
 	ROUTING_GSM     = 0
 	ROUTING_SIP     = 1
@@ -26,8 +26,8 @@ const (
 
 var (
 	API_NAME_URL_MAP = map[string]string{
-		"multifon": MULTIFON_API_URL,
-		"emotion":  EMOTION_API_URL,
+		API_MULTIFON: "https://sm.megafon.ru/sm/client/",
+		API_EMOTION:  "https://emotion.megalabs.ru/sm/client/",
 	}
 	ROUTING_DESCRIPTION_MAP = map[int]string{
 		ROUTING_GSM:     "GSM",
@@ -130,10 +130,10 @@ func newSetFailedError(key string, value, currentValue interface{}) error {
 }
 
 type Client struct {
-	httpClient *http.Client
 	login      string
 	password   string
 	apiUrl     string
+	httpClient *http.Client
 }
 
 func (c *Client) Request(
@@ -261,19 +261,20 @@ func (c *Client) SetPassword(password string) (*ResponseResult, error) {
 }
 
 func NewClient(
-	login, password, apiUrl string,
+	login, password, api string,
 	httpClient *http.Client,
 ) *Client {
-	if apiUrl == "" {
-		apiUrl = DEFAULT_API_URL
+	apiUrl, ok := API_NAME_URL_MAP[api]
+	if !ok {
+		apiUrl = API_NAME_URL_MAP[API_DEFAULT]
 	}
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: DEFAULT_TIMEOUT}
 	}
 	return &Client{
-		httpClient: httpClient,
 		login:      login,
 		password:   password,
 		apiUrl:     apiUrl,
+		httpClient: httpClient,
 	}
 }
