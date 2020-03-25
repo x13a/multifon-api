@@ -10,10 +10,11 @@ build:
 	go build -o $(TARGET) ./src
 
 install:
-	cp $(TARGET) $(BINDIR)/
+	install -d $(BINDIR)/
+	install $(TARGET) $(BINDIR)/
 
 uninstall:
 	rm -f $(BINDIR)/$(NAME)
 
 clean:
-	rm -rf $(TARGET_DIR)
+	rm -rf $(TARGET_DIR)/
