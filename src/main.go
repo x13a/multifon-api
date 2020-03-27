@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -14,70 +15,83 @@ import (
 	multifonapi "./lib"
 )
 
-const (
-	Version = "0.0.15"
+type API multifonapi.API
 
-	COMMAND_BALANCE      = "balance"
-	COMMAND_ROUTING      = "routing"
-	COMMAND_STATUS       = "status"
-	COMMAND_PROFILE      = "profile"
-	COMMAND_LINES        = "lines"
-	COMMAND_SET_PASSWORD = "set-password"
+func (a *API) String() string {
+	return string(*a)
+}
 
-	EX_OK      = 0
-	EX_ERR     = 1
-	EX_ARG_ERR = 2 // golang flag error exit code
-)
-
-var (
-	AVAILABLE_COMMANDS = [...]string{
-		COMMAND_BALANCE,
-		COMMAND_ROUTING,
-		COMMAND_STATUS,
-		COMMAND_PROFILE,
-		COMMAND_LINES,
-		COMMAND_SET_PASSWORD,
+func (a *API) Set(s string) error {
+	api := multifonapi.API(strings.ToLower(s))
+	if _, ok := multifonapi.APIUrlMap[api]; ok {
+		*a = API(api)
+		return nil
 	}
+	return errors.New("parse error")
+}
 
-	Login      string
-	Password   string
-	API        string
-	Timeout    time.Duration
-	Command    string
-	CommandArg interface{}
+func (a *API) Unwrap() multifonapi.API {
+	return multifonapi.API(*a)
+}
 
-	versionFlagName  = "V"
-	loginFlagName    = "login"
-	passwordFlagName = "password"
-	apiFlagName      = "api"
-	timeoutFlagName  = "timeout"
+const (
+	FlagHelp     = "h"
+	FlagVersion  = "V"
+	FlagLogin    = "login"
+	FlagPassword = "password"
+	FlagAPI      = "api"
+	FlagTimeout  = "timeout"
 
-	commandMetaVar    = "COMMAND"
-	commandArgMetaVar = fmt.Sprint(commandMetaVar, "_ARGUMENT")
+	MetaVarLogin      = "LOGIN"
+	MetaVarPassword   = "PASSWORD"
+	MetaVarAPI        = "API"
+	MetaVarTimeout    = "TIMEOUT"
+	MetaVarCommand    = "COMMAND"
+	MetaVarCommandArg = "COMMAND_ARGUMENT"
+
+	CommandBalance     = "balance"
+	CommandRouting     = "routing"
+	CommandStatus      = "status"
+	CommandProfile     = "profile"
+	CommandLines       = "lines"
+	CommandSetPassword = "set-password"
+
+	ExOk     = 0
+	ExErr    = 1
+	ExArgErr = 2 // golang flag error exit code
 )
 
-func getAPIs() []string {
-	res := make([]string, len(multifonapi.API_NAME_URL_MAP))
+var Commands = [...]string{
+	CommandBalance,
+	CommandRouting,
+	CommandStatus,
+	CommandProfile,
+	CommandLines,
+	CommandSetPassword,
+}
+
+func getAPIChoices() []string {
+	res := make([]string, len(multifonapi.APIUrlMap))
 	i := 0
-	for k := range multifonapi.API_NAME_URL_MAP {
-		res[i] = k
+	for k := range multifonapi.APIUrlMap {
+		res[i] = k.String()
 		i++
 	}
 	return res
 }
 
 func getRoutingDescriptions() []string {
-	res := make([]string, len(multifonapi.ROUTING_DESCRIPTION_MAP))
+	res := make([]string, len(multifonapi.RoutingDescriptionMap))
 	i := 0
-	for _, v := range multifonapi.ROUTING_DESCRIPTION_MAP {
+	for _, v := range multifonapi.RoutingDescriptionMap {
 		res[i] = v
 		i++
 	}
 	return res
 }
 
-func getRoutingByDescription(s string) int {
-	for k, v := range multifonapi.ROUTING_DESCRIPTION_MAP {
+func getRoutingByDescription(s string) multifonapi.Routing {
+	for k, v := range multifonapi.RoutingDescriptionMap {
 		if v == s {
 			return k
 		}
@@ -92,19 +106,15 @@ func printUsage() {
 	} else {
 		name = filepath.Base(os.Args[0])
 	}
-	namePadding := strings.Repeat(" ", len(name))
-	helpFlagName := "h"
-	passwordMetaVar := "PASSWORD"
-	apiMetaVar := "API"
-	timeoutMetaVar := "TIMEOUT"
-	apis := getAPIs()
-	sort.Strings(apis)
+	indention := strings.Repeat(" ", len(name))
+	apiChoices := getAPIChoices()
+	sort.Strings(apiChoices)
 	routingDescriptions := getRoutingDescriptions()
 	sort.Strings(routingDescriptions)
-	choicesDelimiter := " | "
+	sep := " | "
 	fmt.Fprintf(
 		flag.CommandLine.Output(),
-		"%s [-%s%s] -%s <LOGIN> -%s <%s>\n"+
+		"%s [-%s%s] -%s <%s> -%s <%s>\n"+
 			"%s [-%s <%s>] [-%s <%s>]\n"+
 			"%s <%s> [<%s>]\n\n"+
 			"[-%s] * Print help and exit\n"+
@@ -119,16 +129,14 @@ func printUsage() {
 			"  %s { %s }\n"+
 			"  %s <NUMBER> (2 .. 20)\n"+
 			"  %s <NEW_%s> (min 8, max 20, mixed case, digits)\n",
-		name, helpFlagName, versionFlagName, loginFlagName, passwordFlagName,
-		passwordMetaVar, namePadding, apiFlagName, apiMetaVar, timeoutFlagName,
-		timeoutMetaVar, namePadding, commandMetaVar, commandArgMetaVar,
-		helpFlagName, versionFlagName, apiMetaVar,
-		strings.Join(apis, choicesDelimiter), multifonapi.API_DEFAULT,
-		timeoutMetaVar, multifonapi.DEFAULT_TIMEOUT, commandMetaVar,
-		strings.Join(AVAILABLE_COMMANDS[:], choicesDelimiter),
-		commandArgMetaVar, COMMAND_ROUTING,
-		strings.Join(routingDescriptions, choicesDelimiter), COMMAND_LINES,
-		COMMAND_SET_PASSWORD, passwordMetaVar,
+		name, FlagHelp, FlagVersion, FlagLogin, MetaVarLogin, FlagPassword,
+		MetaVarPassword, indention, FlagAPI, MetaVarAPI, FlagTimeout,
+		MetaVarTimeout, indention, MetaVarCommand, MetaVarCommandArg,
+		FlagHelp, FlagVersion, MetaVarAPI, strings.Join(apiChoices, sep),
+		multifonapi.APIDefault, MetaVarTimeout, multifonapi.DefaultTimeout,
+		MetaVarCommand, strings.Join(Commands[:], sep), MetaVarCommandArg,
+		CommandRouting, strings.Join(routingDescriptions, sep), CommandLines,
+		CommandSetPassword, MetaVarPassword,
 	)
 }
 
@@ -138,109 +146,118 @@ func flagNameToFlag(name string) string {
 
 func fatalParseArgs(k, v string) {
 	fmt.Fprintf(os.Stderr, "Failed to parse argument %s: \"%s\"\n", k, v)
-	os.Exit(EX_ARG_ERR)
+	os.Exit(ExArgErr)
 }
 
-func parseAPI() {
-	API = strings.ToLower(API)
-	if _, ok := multifonapi.API_NAME_URL_MAP[API]; !ok {
-		fatalParseArgs(flagNameToFlag(apiFlagName), API)
-	}
-}
-
-func parseCommand() {
-	Command = strings.ToLower(flag.Arg(0))
-	for _, v := range AVAILABLE_COMMANDS {
-		if v == Command {
+func parseCommand(opts *Opts) {
+	cmd := strings.ToLower(flag.Arg(0))
+	for _, v := range Commands {
+		if v == cmd {
+			opts.command = cmd
 			return
 		}
 	}
-	fatalParseArgs(commandMetaVar, Command)
+	fatalParseArgs(MetaVarCommand, cmd)
 }
 
-func parseCommandArg() {
+func parseCommandArg(opts *Opts) {
 	arg := flag.Arg(1)
-	switch Command {
-	case COMMAND_ROUTING:
+	switch opts.command {
+	case CommandRouting:
 		if arg == "" {
 			return
 		}
 		routing := getRoutingByDescription(strings.ToUpper(arg))
 		if routing == -1 {
-			fatalParseArgs(commandArgMetaVar, arg)
+			fatalParseArgs(MetaVarCommandArg, arg)
 		}
-		CommandArg = routing
-	case COMMAND_LINES:
+		opts.commandArg = routing
+	case CommandLines:
 		if arg == "" {
 			return
 		}
 		n, err := strconv.Atoi(arg)
 		if err != nil {
-			fatalParseArgs(commandArgMetaVar, arg)
+			fatalParseArgs(MetaVarCommandArg, arg)
 		}
-		CommandArg = n
-	case COMMAND_SET_PASSWORD:
+		opts.commandArg = n
+	case CommandSetPassword:
 		if arg == "" {
-			fatalParseArgs(commandArgMetaVar, arg)
+			fatalParseArgs(MetaVarCommandArg, arg)
 		}
-		CommandArg = arg
+		opts.commandArg = arg
 	}
 }
 
-func parseArgs() {
+type Opts struct {
+	login      string
+	password   string
+	api        API
+	timeout    time.Duration
+	command    string
+	commandArg interface{}
+}
+
+func parseArgs() *Opts {
 	flag.Usage = printUsage
 	if len(os.Args) < 2 {
 		flag.Usage()
-		os.Exit(EX_ARG_ERR)
+		os.Exit(ExArgErr)
 	}
-	isVersion := flag.Bool(versionFlagName, false, "")
-	flag.StringVar(&Login, loginFlagName, "", "")
-	flag.StringVar(&Password, passwordFlagName, "", "")
-	flag.StringVar(&API, apiFlagName, multifonapi.API_DEFAULT, "")
+	opts := &Opts{}
+	isHelp := flag.Bool(FlagHelp, false, "")
+	isVersion := flag.Bool(FlagVersion, false, "")
+	flag.StringVar(&opts.login, FlagLogin, "", "")
+	flag.StringVar(&opts.password, FlagPassword, "", "")
+	flag.Var(&opts.api, FlagAPI, "")
 	flag.DurationVar(
-		&Timeout,
-		timeoutFlagName,
-		multifonapi.DEFAULT_TIMEOUT,
+		&opts.timeout,
+		FlagTimeout,
+		multifonapi.DefaultTimeout,
 		"",
 	)
 	flag.Parse()
+	if *isHelp {
+		flag.Usage()
+		os.Exit(ExOk)
+	}
 	if *isVersion {
-		fmt.Println(Version)
-		os.Exit(EX_OK)
+		fmt.Println(multifonapi.Version)
+		os.Exit(ExOk)
 	}
-	if Login == "" {
-		fatalParseArgs(flagNameToFlag(loginFlagName), Login)
+	if opts.login == "" {
+		fatalParseArgs(flagNameToFlag(FlagLogin), opts.login)
 	}
-	if Password == "" {
-		fatalParseArgs(flagNameToFlag(passwordFlagName), Password)
+	if opts.password == "" {
+		fatalParseArgs(flagNameToFlag(FlagPassword), opts.password)
 	}
-	parseAPI()
-	parseCommand()
-	parseCommandArg()
+	parseCommand(opts)
+	parseCommandArg(opts)
+	return opts
 }
 
 func main() {
-	parseArgs()
+	opts := parseArgs()
 	client := multifonapi.NewClient(
-		Login,
-		Password,
-		API,
-		&http.Client{Timeout: Timeout},
+		opts.login,
+		opts.password,
+		opts.api.Unwrap(),
+		&http.Client{Timeout: opts.timeout},
 	)
 	fatalIfErr := func(err error) {
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(EX_ERR)
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(ExErr)
 		}
 	}
 	strOk := "OK"
-	switch Command {
-	case COMMAND_BALANCE:
+	switch opts.command {
+	case CommandBalance:
 		res, err := client.GetBalance()
 		fatalIfErr(err)
 		fmt.Println(res.Balance)
-	case COMMAND_ROUTING:
-		if CommandArg == nil {
+	case CommandRouting:
+		if opts.commandArg == nil {
 			res, err := client.GetRouting()
 			fatalIfErr(err)
 			val := res.Description()
@@ -250,11 +267,11 @@ func main() {
 				fmt.Println(val)
 			}
 		} else {
-			_, err := client.SetRouting(CommandArg.(int))
+			_, err := client.SetRouting(opts.commandArg.(multifonapi.Routing))
 			fatalIfErr(err)
 			fmt.Println(strOk)
 		}
-	case COMMAND_STATUS:
+	case CommandStatus:
 		res, err := client.GetStatus()
 		fatalIfErr(err)
 		val := res.Description()
@@ -265,22 +282,22 @@ func main() {
 			val = fmt.Sprintf("%s:%s", val, res.Expires)
 		}
 		fmt.Println(val)
-	case COMMAND_PROFILE:
+	case CommandProfile:
 		res, err := client.GetProfile()
 		fatalIfErr(err)
 		fmt.Println(res.MSISDN)
-	case COMMAND_LINES:
-		if CommandArg == nil {
+	case CommandLines:
+		if opts.commandArg == nil {
 			res, err := client.GetLines()
 			fatalIfErr(err)
 			fmt.Println(res.Lines)
 		} else {
-			_, err := client.SetLines(CommandArg.(int))
+			_, err := client.SetLines(opts.commandArg.(int))
 			fatalIfErr(err)
 			fmt.Println(strOk)
 		}
-	case COMMAND_SET_PASSWORD:
-		_, err := client.SetPassword(CommandArg.(string))
+	case CommandSetPassword:
+		_, err := client.SetPassword(opts.commandArg.(string))
 		fatalIfErr(err)
 		fmt.Println(strOk)
 	}

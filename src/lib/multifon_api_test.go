@@ -46,8 +46,8 @@ func call(obj interface{}, name string, args ...interface{}) []reflect.Value {
 }
 
 func get(t *testing.T, fnName string) {
-	for k := range API_NAME_URL_MAP {
-		t.Run(k, func(t *testing.T) {
+	for k := range APIUrlMap {
+		t.Run(k.String(), func(t *testing.T) {
 			c := NewClient(Config.Login, Config.Password, k, nil)
 			res := call(c, fnName)
 			if err, ok := res[1].Interface().(error); ok && err != nil {
@@ -62,11 +62,11 @@ func get(t *testing.T, fnName string) {
 	}
 }
 
-func set(t *testing.T, fnName string, values []int) {
+func set(t *testing.T, fnName string, values []interface{}) {
 	setPrefix := "Set"
 	getFnName := strings.Replace(fnName, setPrefix, "Get", 1)
 	name := fnName[len(setPrefix):]
-	_set := func(t *testing.T, c *Client, v int) bool {
+	_set := func(t *testing.T, c *Client, v interface{}) bool {
 		res := call(c, fnName, v)
 		if err, ok := res[1].Interface().(error); ok && err != nil {
 			t.Error(err)
@@ -74,14 +74,14 @@ func set(t *testing.T, fnName string, values []int) {
 		}
 		return true
 	}
-	for k := range API_NAME_URL_MAP {
-		t.Run(k, func(t *testing.T) {
+	for k := range APIUrlMap {
+		t.Run(k.String(), func(t *testing.T) {
 			c := NewClient(Config.Login, Config.Password, k, nil)
 			res := call(c, getFnName)
 			if err, ok := res[1].Interface().(error); ok && err != nil {
 				t.Fatal(err)
 			}
-			initVal := res[0].Elem().FieldByName(name).Interface().(int)
+			initVal := res[0].Elem().FieldByName(name).Interface()
 			for _, val := range values {
 				if val == initVal {
 					continue
@@ -116,7 +116,7 @@ func TestGetRouting(t *testing.T) {
 }
 
 func TestSetRouting(t *testing.T) {
-	set(t, "SetRouting", []int{ROUTING_GSM, ROUTING_SIP, ROUTING_SIP_GSM})
+	set(t, "SetRouting", []interface{}{RoutingGSM, RoutingSIP, RoutingSIPGSM})
 }
 
 func TestGetStatus(t *testing.T) {
@@ -132,15 +132,15 @@ func TestGetLines(t *testing.T) {
 }
 
 func TestSetLines(t *testing.T) {
-	set(t, "SetLines", []int{2, 3})
+	set(t, "SetLines", []interface{}{2, 3})
 }
 
 func TestSetPassword(t *testing.T) {
 	if Config.NewPassword == "" {
 		t.Fatal("new_password required")
 	}
-	for k := range API_NAME_URL_MAP {
-		t.Run(k, func(t *testing.T) {
+	for k := range APIUrlMap {
+		t.Run(k.String(), func(t *testing.T) {
 			c := NewClient(Config.Login, Config.Password, k, nil)
 			for _, passwd := range [...]string{
 				Config.NewPassword,

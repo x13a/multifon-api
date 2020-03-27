@@ -9,30 +9,41 @@ import (
 	"time"
 )
 
+type (
+	API     string
+	Routing int
+)
+
+func (a API) String() string {
+	return string(a)
+}
+
 const (
-	API_MULTIFON = "multifon"
-	API_EMOTION  = "emotion"
-	API_DEFAULT  = API_MULTIFON
+	Version = "0.0.16"
 
-	ROUTING_GSM     = 0
-	ROUTING_SIP     = 1
-	ROUTING_SIP_GSM = 2
+	APIMultifon API = "multifon"
+	APIEmotion  API = "emotion"
+	APIDefault      = APIMultifon
 
-	STATUS_ACTIVE  = 0
-	STATUS_BLOCKED = 1
+	RoutingGSM    Routing = 0
+	RoutingSIP    Routing = 1
+	RoutingSIPGSM Routing = 2
 
-	DEFAULT_TIMEOUT = 30 * time.Second
+	StatusActive  = 0
+	StatusBlocked = 1
+
+	DefaultTimeout = 30 * time.Second
 )
 
 var (
-	API_NAME_URL_MAP = map[string]string{
-		API_MULTIFON: "https://sm.megafon.ru/sm/client/",
-		API_EMOTION:  "https://emotion.megalabs.ru/sm/client/",
+	APIUrlMap = map[API]string{
+		APIMultifon: "https://sm.megafon.ru/sm/client/",
+		APIEmotion:  "https://emotion.megalabs.ru/sm/client/",
 	}
-	ROUTING_DESCRIPTION_MAP = map[int]string{
-		ROUTING_GSM:     "GSM",
-		ROUTING_SIP:     "SIP",
-		ROUTING_SIP_GSM: "SIP+GSM",
+	RoutingDescriptionMap = map[Routing]string{
+		RoutingGSM:    "GSM",
+		RoutingSIP:    "SIP",
+		RoutingSIPGSM: "SIP+GSM",
 	}
 )
 
@@ -52,6 +63,21 @@ type HTTPStatusError struct {
 
 func (e *HTTPStatusError) Error() string {
 	return e.Status
+}
+
+type SetFailedError struct {
+	Key          string
+	Value        interface{}
+	CurrentValue interface{}
+}
+
+func (e *SetFailedError) Error() string {
+	return fmt.Sprintf(
+		"Failed to set %s, invalid value: %v (current: %v)",
+		e.Key,
+		e.Value,
+		e.CurrentValue,
+	)
 }
 
 type Response interface {
@@ -83,11 +109,11 @@ type ResponseBalance struct {
 
 type ResponseRouting struct {
 	ResponseResult
-	Routing int `xml:"routing"`
+	Routing Routing `xml:"routing"`
 }
 
 func (r *ResponseRouting) Description() string {
-	if v, ok := ROUTING_DESCRIPTION_MAP[r.Routing]; ok {
+	if v, ok := RoutingDescriptionMap[r.Routing]; ok {
 		return v
 	}
 	return ""
@@ -101,9 +127,9 @@ type ResponseStatus struct {
 
 func (r *ResponseStatus) Description() string {
 	switch r.Status {
-	case STATUS_ACTIVE:
+	case StatusActive:
 		return "active"
-	case STATUS_BLOCKED:
+	case StatusBlocked:
 		return "blocked"
 	default:
 		return ""
@@ -120,27 +146,22 @@ type ResponseLines struct {
 	Lines int `xml:"ParallelCallsSipOut"`
 }
 
-func newSetFailedError(key string, value, currentValue interface{}) error {
-	return fmt.Errorf(
-		"Failed to set %s, invalid value: %v (current: %v)",
-		key,
-		value,
-		currentValue,
-	)
-}
-
 type Client struct {
 	login      string
 	password   string
-	apiUrl     string
+	API        API
 	httpClient *http.Client
+}
+
+func (c *Client) GetLogin() string {
+	return c.login
 }
 
 func (c *Client) Request(
 	urlPath string,
 	params map[string]string,
 ) ([]byte, error) {
-	reqUrl, err := urlJoin(c.apiUrl, urlPath)
+	reqUrl, err := urlJoin(APIUrlMap[c.API], urlPath)
 	if err != nil {
 		return nil, err
 	}
@@ -202,15 +223,19 @@ func (c *Client) GetRouting() (*ResponseRouting, error) {
 }
 
 /*
-ROUTING_GSM, ROUTING_SIP, ROUTING_SIP_GSM
+RoutingGSM, RoutingSIP, RoutingSIPGSM
 */
-func (c *Client) SetRouting(routing int) (*ResponseRouting, error) {
+func (c *Client) SetRouting(routing Routing) (*ResponseRouting, error) {
 	k := "routing"
-	v := -1
+	v := Routing(-1)
 	data := &ResponseRouting{Routing: v}
-	err := c.Do(k, map[string]string{k: strconv.Itoa(routing)}, data)
+	err := c.Do(k, map[string]string{k: strconv.Itoa(int(routing))}, data)
 	if err == nil && data.Routing != v {
-		err = newSetFailedError(k, routing, data.Routing)
+		err = &SetFailedError{
+			Key:          k,
+			Value:        routing,
+			CurrentValue: data.Routing,
+		}
 	}
 	return data, err
 }
@@ -242,7 +267,11 @@ func (c *Client) SetLines(n int) (*ResponseLines, error) {
 	data := &ResponseLines{Lines: v}
 	err := c.Do(k, map[string]string{k: strconv.Itoa(n)}, data)
 	if err == nil && data.Lines != v {
-		err = newSetFailedError(k, n, data.Lines)
+		err = &SetFailedError{
+			Key:          k,
+			Value:        n,
+			CurrentValue: data.Lines,
+		}
 	}
 	return data, err
 }
@@ -261,20 +290,21 @@ func (c *Client) SetPassword(password string) (*ResponseResult, error) {
 }
 
 func NewClient(
-	login, password, api string,
+	login string,
+	password string,
+	api API,
 	httpClient *http.Client,
 ) *Client {
-	apiUrl, ok := API_NAME_URL_MAP[api]
-	if !ok {
-		apiUrl = API_NAME_URL_MAP[API_DEFAULT]
+	if api == "" {
+		api = APIDefault
 	}
 	if httpClient == nil {
-		httpClient = &http.Client{Timeout: DEFAULT_TIMEOUT}
+		httpClient = &http.Client{Timeout: DefaultTimeout}
 	}
 	return &Client{
 		login:      login,
 		password:   password,
-		apiUrl:     apiUrl,
+		API:        api,
 		httpClient: httpClient,
 	}
 }
