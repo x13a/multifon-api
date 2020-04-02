@@ -20,7 +20,7 @@ type Config struct {
 	Login       string `json:"login"`
 	Password    string `json:"password"`
 	NewPassword string `json:"new_password"`
-	fpath       string
+	path        string
 }
 
 func (c *Config) String() string {
@@ -38,7 +38,7 @@ func (c *Config) Set(s string) error {
 			return err
 		}
 		defer file.Close()
-		c.fpath = s
+		c.path = s
 	}
 	if err := json.NewDecoder(file).Decode(c); err != nil {
 		return err
@@ -300,7 +300,7 @@ func parseArgs() *Opts {
 }
 
 func updateConfigFile(opts *Opts) error {
-	file, err := os.OpenFile(opts.config.fpath, os.O_WRONLY|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(opts.config.path, os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -379,7 +379,7 @@ func main() {
 	case CommandSetPassword:
 		_, err := client.SetPassword(opts.commandArg.(string))
 		fatalIfErr(err)
-		if opts.config.fpath != "" {
+		if opts.config.path != "" {
 			fatalIfErr(updateConfigFile(opts))
 		}
 		fmt.Println(strOk)
