@@ -2,31 +2,32 @@ package multifonapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 )
 
 var (
-	TestConfPath = filepath.Join("testdata", "conf.json")
-	Config       TestConf
+	ConfigPath = filepath.Join("testdata", "conf.json")
+	Config     ConfigType
 )
 
 type DescriptionResponse interface {
 	Description() string
 }
 
-type TestConf struct {
-	Login, Password string
-	NewPassword     string `json:"new_password"`
+type ConfigType struct {
+	Login       string `json:"login"`
+	Password    string `json:"password"`
+	NewPassword string `json:"new_password"`
 }
 
-func loadTestConf() error {
-	file, err := os.Open(TestConfPath)
+func loadConfig() error {
+	file, err := os.Open(ConfigPath)
 	if err != nil {
 		return err
 	}
@@ -45,7 +46,8 @@ func call(obj interface{}, name string, args ...interface{}) []reflect.Value {
 	return reflect.ValueOf(obj).MethodByName(name).Call(arguments)
 }
 
-func get(t *testing.T, fnName string) {
+func get(t *testing.T, name string) {
+	fnName := fmt.Sprint("Get", name)
 	for k := range APIUrlMap {
 		t.Run(k.String(), func(t *testing.T) {
 			c := NewClient(Config.Login, Config.Password, k, nil)
@@ -62,12 +64,11 @@ func get(t *testing.T, fnName string) {
 	}
 }
 
-func set(t *testing.T, fnName string, values []interface{}) {
-	setPrefix := "Set"
-	getFnName := strings.Replace(fnName, setPrefix, "Get", 1)
-	name := fnName[len(setPrefix):]
+func set(t *testing.T, name string, values []interface{}) {
+	getFnName := fmt.Sprint("Get", name)
+	setFnName := fmt.Sprint("Set", name)
 	_set := func(t *testing.T, c *Client, v interface{}) bool {
-		res := call(c, fnName, v)
+		res := call(c, setFnName, v)
 		if err, ok := res[1].Interface().(error); ok && err != nil {
 			t.Error(err)
 			return false
@@ -95,7 +96,7 @@ func set(t *testing.T, fnName string, values []interface{}) {
 }
 
 func TestMain(m *testing.M) {
-	if err := loadTestConf(); err != nil {
+	if err := loadConfig(); err != nil {
 		log.Fatal(err)
 	}
 	if Config.Login == "" {
@@ -108,31 +109,31 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetBalance(t *testing.T) {
-	get(t, "GetBalance")
+	get(t, "Balance")
 }
 
 func TestGetRouting(t *testing.T) {
-	get(t, "GetRouting")
+	get(t, "Routing")
 }
 
 func TestSetRouting(t *testing.T) {
-	set(t, "SetRouting", []interface{}{RoutingGSM, RoutingSIP, RoutingSIPGSM})
+	set(t, "Routing", []interface{}{RoutingGSM, RoutingSIP, RoutingSIPGSM})
 }
 
 func TestGetStatus(t *testing.T) {
-	get(t, "GetStatus")
+	get(t, "Status")
 }
 
 func TestGetProfile(t *testing.T) {
-	get(t, "GetProfile")
+	get(t, "Profile")
 }
 
 func TestGetLines(t *testing.T) {
-	get(t, "GetLines")
+	get(t, "Lines")
 }
 
 func TestSetLines(t *testing.T) {
-	set(t, "SetLines", []interface{}{2, 3})
+	set(t, "Lines", []interface{}{2, 3})
 }
 
 func TestSetPassword(t *testing.T) {
@@ -142,11 +143,11 @@ func TestSetPassword(t *testing.T) {
 	for k := range APIUrlMap {
 		t.Run(k.String(), func(t *testing.T) {
 			c := NewClient(Config.Login, Config.Password, k, nil)
-			for _, passwd := range [...]string{
+			for _, password := range [...]string{
 				Config.NewPassword,
 				Config.Password,
 			} {
-				if _, err := c.SetPassword(passwd); err != nil {
+				if _, err := c.SetPassword(password); err != nil {
 					t.Fatal(err)
 				}
 				time.Sleep(1 * time.Second)

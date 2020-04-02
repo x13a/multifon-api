@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -14,6 +15,36 @@ import (
 
 	multifonapi "./lib"
 )
+
+type Config struct {
+	Login       string `json:"login"`
+	Password    string `json:"password"`
+	NewPassword string `json:"new_password"`
+	fpath       string
+}
+
+func (c *Config) String() string {
+	return ""
+}
+
+func (c *Config) Set(s string) error {
+	var file *os.File
+	var err error
+	if s == ArgStdin {
+		file = os.Stdin
+	} else {
+		file, err = os.Open(s)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		c.fpath = s
+	}
+	if err := json.NewDecoder(file).Decode(c); err != nil {
+		return err
+	}
+	return nil
+}
 
 type API multifonapi.API
 
@@ -37,11 +68,13 @@ func (a *API) Unwrap() multifonapi.API {
 const (
 	FlagHelp     = "h"
 	FlagVersion  = "V"
+	FlagConfig   = "config"
 	FlagLogin    = "login"
 	FlagPassword = "password"
 	FlagAPI      = "api"
 	FlagTimeout  = "timeout"
 
+	MetaVarConfig     = "CONFIG"
 	MetaVarLogin      = "LOGIN"
 	MetaVarPassword   = "PASSWORD"
 	MetaVarAPI        = "API"
@@ -59,6 +92,12 @@ const (
 	ExOk     = 0
 	ExErr    = 1
 	ExArgErr = 2 // golang flag error exit code
+
+	EnvLogin       = "MULTIFON_LOGIN"
+	EnvPassword    = "MULTIFON_PASSWORD"
+	EnvNewPassword = "MULTIFON_NEW_PASSWORD"
+
+	ArgStdin = "-"
 )
 
 var Commands = [...]string{
@@ -106,7 +145,6 @@ func printUsage() {
 	} else {
 		name = filepath.Base(os.Args[0])
 	}
-	indention := strings.Repeat(" ", len(name))
 	apiChoices := getAPIChoices()
 	sort.Strings(apiChoices)
 	routingDescriptions := getRoutingDescriptions()
@@ -114,11 +152,16 @@ func printUsage() {
 	sep := " | "
 	fmt.Fprintf(
 		flag.CommandLine.Output(),
-		"%s [-%s%s] -%s <%s> -%s <%s>\n"+
-			"%s [-%s <%s>] [-%s <%s>]\n"+
-			"%s <%s> [<%s>]\n\n"+
+		"%s [-%s%s] ( -%s <%s> | -%s <%s> -%s <%s> )\n"+
+			"%s [-%s <%s>] [-%s <%s>] <%s> [<%s>]\n\n"+
 			"[-%s] * Print help and exit\n"+
 			"[-%s] * Print version and exit\n\n"+
+			"%s:\n"+
+			"  JSON filepath (fields: [%s, %s, new_%s]; stdin: %s)\n\n"+
+			"%s:\n"+
+			"  string (env: %s)\n\n"+
+			"%s:\n"+
+			"  string (env: %s)\n\n"+
 			"%s:\n"+
 			"  { %s } (default: %s)\n\n"+
 			"%s:\n"+
@@ -128,15 +171,19 @@ func printUsage() {
 			"%s:\n"+
 			"  %s { %s }\n"+
 			"  %s <NUMBER> (2 .. 20)\n"+
-			"  %s <NEW_%s> (min 8, max 20, mixed case, digits)\n",
-		name, FlagHelp, FlagVersion, FlagLogin, MetaVarLogin, FlagPassword,
-		MetaVarPassword, indention, FlagAPI, MetaVarAPI, FlagTimeout,
-		MetaVarTimeout, indention, MetaVarCommand, MetaVarCommandArg,
-		FlagHelp, FlagVersion, MetaVarAPI, strings.Join(apiChoices, sep),
-		multifonapi.APIDefault, MetaVarTimeout, multifonapi.DefaultTimeout,
-		MetaVarCommand, strings.Join(Commands[:], sep), MetaVarCommandArg,
-		CommandRouting, strings.Join(routingDescriptions, sep), CommandLines,
-		CommandSetPassword, MetaVarPassword,
+			"  %s <NEW_%s>\n"+
+			"\t(tip: [min 8, max 20, mixed case, digits]; env: %s)\n",
+		name, FlagHelp, FlagVersion, FlagConfig, MetaVarConfig, FlagLogin,
+		MetaVarLogin, FlagPassword, MetaVarPassword,
+		strings.Repeat(" ", len(name)), FlagAPI, MetaVarAPI, FlagTimeout,
+		MetaVarTimeout, MetaVarCommand, MetaVarCommandArg, FlagHelp,
+		FlagVersion, MetaVarConfig, FlagLogin, FlagPassword, FlagPassword,
+		ArgStdin, MetaVarLogin, EnvLogin, MetaVarPassword, EnvPassword,
+		MetaVarAPI, strings.Join(apiChoices, sep), multifonapi.APIDefault,
+		MetaVarTimeout, multifonapi.DefaultTimeout, MetaVarCommand,
+		strings.Join(Commands[:], sep), MetaVarCommandArg, CommandRouting,
+		strings.Join(routingDescriptions, sep), CommandLines,
+		CommandSetPassword, MetaVarPassword, EnvNewPassword,
 	)
 }
 
@@ -182,14 +229,29 @@ func parseCommandArg(opts *Opts) {
 		}
 		opts.commandArg = n
 	case CommandSetPassword:
-		if arg == "" {
+		if !parseIdentity(&arg, opts.config.NewPassword, EnvNewPassword) {
 			fatalParseArgs(MetaVarCommandArg, arg)
 		}
 		opts.commandArg = arg
 	}
 }
 
+func parseIdentity(arg *string, configValue, envKey string) bool {
+	if *arg == "" {
+		value := configValue
+		if value == "" {
+			value = os.Getenv(envKey)
+			if value == "" {
+				return false
+			}
+		}
+		*arg = value
+	}
+	return true
+}
+
 type Opts struct {
+	config     Config
 	login      string
 	password   string
 	api        API
@@ -207,6 +269,7 @@ func parseArgs() *Opts {
 	opts := &Opts{}
 	isHelp := flag.Bool(FlagHelp, false, "")
 	isVersion := flag.Bool(FlagVersion, false, "")
+	flag.Var(&opts.config, FlagConfig, "")
 	flag.StringVar(&opts.login, FlagLogin, "", "")
 	flag.StringVar(&opts.password, FlagPassword, "", "")
 	flag.Var(&opts.api, FlagAPI, "")
@@ -225,15 +288,32 @@ func parseArgs() *Opts {
 		fmt.Println(multifonapi.Version)
 		os.Exit(ExOk)
 	}
-	if opts.login == "" {
+	if !parseIdentity(&opts.login, opts.config.Login, EnvLogin) {
 		fatalParseArgs(flagNameToFlag(FlagLogin), opts.login)
 	}
-	if opts.password == "" {
+	if !parseIdentity(&opts.password, opts.config.Password, EnvPassword) {
 		fatalParseArgs(flagNameToFlag(FlagPassword), opts.password)
 	}
 	parseCommand(opts)
 	parseCommandArg(opts)
 	return opts
+}
+
+func updateConfigFile(opts *Opts) error {
+	file, err := os.OpenFile(opts.config.fpath, os.O_WRONLY|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	opts.config.Login = opts.login
+	opts.config.Password = opts.commandArg.(string)
+	opts.config.NewPassword = opts.password
+	enc := json.NewEncoder(file)
+	enc.SetIndent("", "\t")
+	if err := enc.Encode(opts.config); err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -299,6 +379,9 @@ func main() {
 	case CommandSetPassword:
 		_, err := client.SetPassword(opts.commandArg.(string))
 		fatalIfErr(err)
+		if opts.config.fpath != "" {
+			fatalIfErr(updateConfigFile(opts))
+		}
 		fmt.Println(strOk)
 	}
 }

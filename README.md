@@ -15,12 +15,20 @@ $ brew install x31a/tap/multifon-api
 
 ## Usage
 ```text
-multifon-api [-hV] -login <LOGIN> -password <PASSWORD>
-             [-api <API>] [-timeout <TIMEOUT>]
-             <COMMAND> [<COMMAND_ARGUMENT>]
+multifon-api [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
+             [-api <API>] [-timeout <TIMEOUT>] <COMMAND> [<COMMAND_ARGUMENT>]
 
 [-h] * Print help and exit
 [-V] * Print version and exit
+
+CONFIG:
+  JSON filepath (fields: [login, password, new_password]; stdin: -)
+
+LOGIN:
+  string (env: MULTIFON_LOGIN)
+
+PASSWORD:
+  string (env: MULTIFON_PASSWORD)
 
 API:
   { emotion | multifon } (default: multifon)
@@ -34,17 +42,37 @@ COMMAND:
 COMMAND_ARGUMENT:
   routing { GSM | SIP | SIP+GSM }
   lines <NUMBER> (2 .. 20)
-  set-password <NEW_PASSWORD> (min 8, max 20, mixed case, digits)
+  set-password <NEW_PASSWORD>
+	(tip: [min 8, max 20, mixed case, digits]; env: MULTIFON_NEW_PASSWORD)
 ```
 
 ## Example
 
+Config (*new_password* can be omitted, useful for *set-password*):
+```json
+{
+	"login": "LOGIN",
+	"password": "PASSWORD",
+	"new_password": "NEW_PASSWORD"
+}
+```
+
 To get balance:
 ```sh
-$ multifon-api -login "LOGIN" -password "PASSWORD" balance
+$ multifon-api -config ~/multifon.conf balance
 ```
 
 To set routing:
 ```sh
-$ multifon-api -login "LOGIN" -password "PASSWORD" routing gsm
+$ multifon-api -config ~/multifon.conf routing gsm
+```
+
+To get status (stdin config):
+```sh
+$ cat ~/multifon.conf | multifon-api -config - status
+```
+
+To set lines (env identity, **space before first variable!**):
+```sh
+$  MULTIFON_LOGIN="login" MULTIFON_PASSWORD="password" multifon-api lines 2
 ```
