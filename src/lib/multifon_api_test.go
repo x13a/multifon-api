@@ -46,49 +46,65 @@ func call(obj interface{}, name string, args ...interface{}) []reflect.Value {
 	return reflect.ValueOf(obj).MethodByName(name).Call(arguments)
 }
 
+func reflectError(v []reflect.Value) error {
+	err, _ := v[len(v)-1].Interface().(error)
+	return err
+}
+
+func getCall(t *testing.T, c *Client, name string) reflect.Value {
+	v := call(c, name)
+	if err := reflectError(v); err != nil {
+		t.Fatal(err.Error())
+	}
+	return v[0]
+}
+
+func getFnName(s string) string {
+	return fmt.Sprint("Get", s)
+}
+
+func newClient(api API) *Client {
+	return NewClient(Config.Login, Config.Password, api, nil)
+}
+
+func delay() {
+	time.Sleep(1 * time.Second)
+}
+
 func get(t *testing.T, name string) {
-	fnName := fmt.Sprint("Get", name)
-	for k := range APIUrlMap {
-		t.Run(k.String(), func(t *testing.T) {
-			c := NewClient(Config.Login, Config.Password, k, nil)
-			res := call(c, fnName)
-			if err, ok := res[1].Interface().(error); ok && err != nil {
-				t.Fatal(err)
-			}
-			if obj, ok := res[0].Interface().(DescriptionResponse); ok &&
+	fnName := getFnName(name)
+	for api := range APIUrlMap {
+		t.Run(api.String(), func(t *testing.T) {
+			res := getCall(t, newClient(api), fnName)
+			if obj, ok := res.Interface().(DescriptionResponse); ok &&
 				obj.Description() == "" {
 
-				t.Fatalf("empty response description, %+v", obj)
+				t.Fatalf("empty response description, %+v\n", obj)
 			}
 		})
 	}
 }
 
 func set(t *testing.T, name string, values []interface{}) {
-	getFnName := fmt.Sprint("Get", name)
+	getFnName := getFnName(name)
 	setFnName := fmt.Sprint("Set", name)
-	_set := func(t *testing.T, c *Client, v interface{}) bool {
-		res := call(c, setFnName, v)
-		if err, ok := res[1].Interface().(error); ok && err != nil {
-			t.Error(err)
-			return false
+	_set := func(t *testing.T, c *Client, v interface{}) {
+		if err := reflectError(call(c, setFnName, v)); err != nil {
+			t.Error(err.Error())
 		}
-		return true
 	}
-	for k := range APIUrlMap {
-		t.Run(k.String(), func(t *testing.T) {
-			c := NewClient(Config.Login, Config.Password, k, nil)
-			res := call(c, getFnName)
-			if err, ok := res[1].Interface().(error); ok && err != nil {
-				t.Fatal(err)
-			}
-			initVal := res[0].Elem().FieldByName(name).Interface()
+	for api := range APIUrlMap {
+		t.Run(api.String(), func(t *testing.T) {
+			c := newClient(api)
+			res := getCall(t, c, getFnName)
+			delay()
+			initVal := res.Elem().FieldByName(name).Interface()
 			for _, val := range values {
 				if val == initVal {
 					continue
 				}
 				_set(t, c, val)
-				time.Sleep(1 * time.Second)
+				delay()
 			}
 			_set(t, c, initVal)
 		})
@@ -97,13 +113,13 @@ func set(t *testing.T, name string, values []interface{}) {
 
 func TestMain(m *testing.M) {
 	if err := loadConfig(); err != nil {
-		log.Fatal(err)
+		log.Fatalln(err.Error())
 	}
 	if Config.Login == "" {
-		log.Fatal("login required")
+		log.Fatalln("login required")
 	}
 	if Config.Password == "" {
-		log.Fatal("password required")
+		log.Fatalln("password required")
 	}
 	os.Exit(m.Run())
 }
@@ -140,17 +156,17 @@ func TestSetPassword(t *testing.T) {
 	if Config.NewPassword == "" {
 		t.Fatal("new_password required")
 	}
-	for k := range APIUrlMap {
-		t.Run(k.String(), func(t *testing.T) {
-			c := NewClient(Config.Login, Config.Password, k, nil)
+	for api := range APIUrlMap {
+		t.Run(api.String(), func(t *testing.T) {
+			c := newClient(api)
 			for _, password := range [...]string{
 				Config.NewPassword,
 				Config.Password,
 			} {
 				if _, err := c.SetPassword(password); err != nil {
-					t.Fatal(err)
+					t.Fatal(err.Error())
 				}
-				time.Sleep(1 * time.Second)
+				delay()
 			}
 		})
 	}

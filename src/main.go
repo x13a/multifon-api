@@ -172,7 +172,7 @@ func printUsage() {
 			"  %s { %s }\n"+
 			"  %s <NUMBER> (2 .. 20)\n"+
 			"  %s <NEW_%s>\n"+
-			"\t(tip: [min 8, max 20, mixed case, digits]; env: %s)\n",
+			"\t(tip: `min 8, max 20, mixed case, digits`; env: %s)\n",
 		name, FlagHelp, FlagVersion, FlagConfig, MetaVarConfig, FlagLogin,
 		MetaVarLogin, FlagPassword, MetaVarPassword,
 		strings.Repeat(" ", len(name)), FlagAPI, MetaVarAPI, FlagTimeout,
@@ -192,7 +192,7 @@ func flagNameToFlag(name string) string {
 }
 
 func fatalParseArgs(k, v string) {
-	fmt.Fprintf(os.Stderr, "Failed to parse argument %s: \"%s\"\n", k, v)
+	fmt.Fprintf(os.Stderr, "Failed to parse argument %s: `%s`\n", k, v)
 	os.Exit(ExArgErr)
 }
 
