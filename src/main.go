@@ -40,10 +40,7 @@ func (c *Config) Set(s string) error {
 		defer file.Close()
 		c.path = s
 	}
-	if err := json.NewDecoder(file).Decode(c); err != nil {
-		return err
-	}
-	return nil
+	return json.NewDecoder(file).Decode(c)
 }
 
 type API multifonapi.API
@@ -310,10 +307,7 @@ func updateConfigFile(opts *Opts) error {
 	opts.config.NewPassword = opts.password
 	enc := json.NewEncoder(file)
 	enc.SetIndent("", "\t")
-	if err := enc.Encode(opts.config); err != nil {
-		return err
-	}
-	return nil
+	return enc.Encode(opts.config)
 }
 
 func main() {

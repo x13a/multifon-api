@@ -32,10 +32,7 @@ func loadConfig() error {
 		return err
 	}
 	defer file.Close()
-	if err := json.NewDecoder(file).Decode(&Config); err != nil {
-		return err
-	}
-	return nil
+	return json.NewDecoder(file).Decode(&Config)
 }
 
 func call(obj interface{}, name string, args ...interface{}) []reflect.Value {
@@ -75,8 +72,8 @@ func get(t *testing.T, name string) {
 	fnName := getFnName(name)
 	for api := range APIUrlMap {
 		t.Run(api.String(), func(t *testing.T) {
-			res := getCall(t, newClient(api), fnName)
-			if obj, ok := res.Interface().(DescriptionResponse); ok &&
+			if obj, ok := getCall(t, newClient(api), fnName).
+				Interface().(DescriptionResponse); ok &&
 				obj.Description() == "" {
 
 				t.Fatalf("empty response description, %+v\n", obj)
@@ -96,9 +93,11 @@ func set(t *testing.T, name string, values []interface{}) {
 	for api := range APIUrlMap {
 		t.Run(api.String(), func(t *testing.T) {
 			c := newClient(api)
-			res := getCall(t, c, getFnName)
+			initVal := getCall(t, c, getFnName).
+				Elem().
+				FieldByName(name).
+				Interface()
 			delay()
-			initVal := res.Elem().FieldByName(name).Interface()
 			for _, val := range values {
 				if val == initVal {
 					continue

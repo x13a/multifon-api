@@ -19,7 +19,7 @@ func (a API) String() string {
 }
 
 const (
-	Version = "0.0.19"
+	Version = "0.0.20"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -187,11 +187,7 @@ func (c *Client) Request(
 			Status: resp.Status,
 		}
 	}
-	buf, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
+	return ioutil.ReadAll(resp.Body)
 }
 
 func (c *Client) Do(
@@ -206,10 +202,7 @@ func (c *Client) Do(
 	if err := xml.Unmarshal(buf, data); err != nil {
 		return err
 	}
-	if err := data.ResultError(); err != nil {
-		return err
-	}
-	return nil
+	return data.ResultError()
 }
 
 func (c *Client) GetBalance() (*ResponseBalance, error) {
