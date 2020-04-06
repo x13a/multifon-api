@@ -3,7 +3,6 @@ package multifonapi
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -19,7 +18,7 @@ func (a API) String() string {
 }
 
 const (
-	Version = "0.0.20"
+	Version = "0.1.0"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -149,7 +148,7 @@ type ResponseLines struct {
 type Client struct {
 	login      string
 	password   string
-	API        API
+	apiUrl     string
 	httpClient *http.Client
 }
 
@@ -157,17 +156,22 @@ func (c *Client) GetLogin() string {
 	return c.login
 }
 
+func (c *Client) SetAPI(api API) {
+	c.apiUrl = APIUrlMap[api]
+}
+
 func (c *Client) Request(
 	urlPath string,
 	params map[string]string,
-) ([]byte, error) {
-	reqUrl, err := urlJoin(APIUrlMap[c.API], urlPath)
+	data Response,
+) error {
+	reqUrl, err := urlJoin(c.apiUrl, urlPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req, err := http.NewRequest(http.MethodPost, reqUrl, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	q := req.URL.Query()
 	q.Add("login", c.login)
@@ -178,16 +182,16 @@ func (c *Client) Request(
 	req.URL.RawQuery = q.Encode()
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < 600 {
-		return nil, &HTTPStatusError{
+		return &HTTPStatusError{
 			Code:   resp.StatusCode,
 			Status: resp.Status,
 		}
 	}
-	return ioutil.ReadAll(resp.Body)
+	return xml.NewDecoder(resp.Body).Decode(data)
 }
 
 func (c *Client) Do(
@@ -195,11 +199,7 @@ func (c *Client) Do(
 	params map[string]string,
 	data Response,
 ) error {
-	buf, err := c.Request(urlPath, params)
-	if err != nil {
-		return err
-	}
-	if err := xml.Unmarshal(buf, data); err != nil {
+	if err := c.Request(urlPath, params, data); err != nil {
 		return err
 	}
 	return data.ResultError()
@@ -297,7 +297,7 @@ func NewClient(
 	return &Client{
 		login:      login,
 		password:   password,
-		API:        api,
+		apiUrl:     APIUrlMap[api],
 		httpClient: httpClient,
 	}
 }
