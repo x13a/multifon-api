@@ -18,7 +18,7 @@ func (a API) String() string {
 }
 
 const (
-	Version = "0.1.0"
+	Version = "0.1.1"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -163,15 +163,14 @@ func (c *Client) SetAPI(api API) {
 func (c *Client) Request(
 	urlPath string,
 	params map[string]string,
-	data Response,
-) error {
+) (*http.Request, error) {
 	reqUrl, err := urlJoin(c.apiUrl, urlPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req, err := http.NewRequest(http.MethodPost, reqUrl, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	q := req.URL.Query()
 	q.Add("login", c.login)
@@ -180,6 +179,18 @@ func (c *Client) Request(
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
+	return req, nil
+}
+
+func (c *Client) Do(
+	urlPath string,
+	params map[string]string,
+	data Response,
+) error {
+	req, err := c.Request(urlPath, params)
+	if err != nil {
+		return err
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -191,15 +202,7 @@ func (c *Client) Request(
 			Status: resp.Status,
 		}
 	}
-	return xml.NewDecoder(resp.Body).Decode(data)
-}
-
-func (c *Client) Do(
-	urlPath string,
-	params map[string]string,
-	data Response,
-) error {
-	if err := c.Request(urlPath, params, data); err != nil {
+	if err := xml.NewDecoder(resp.Body).Decode(data); err != nil {
 		return err
 	}
 	return data.ResultError()
