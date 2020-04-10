@@ -22,7 +22,9 @@ multifon-api [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
 [-V] * Print version and exit
 
 CONFIG:
-  JSON filepath (fields: [login, password, new_password]; stdin: -)
+  JSON filepath
+    + fields: [login, password, new_password]
+    + stdin:  -
 
 LOGIN:
   string (env: MULTIFON_LOGIN)
@@ -43,7 +45,8 @@ COMMAND_ARGUMENT:
   routing { GSM | SIP | SIP+GSM }
   lines <NUMBER> (2 .. 20)
   set-password <NEW_PASSWORD>
-	(tip: `min 8, max 20, mixed case, digits`; env: MULTIFON_NEW_PASSWORD)
+	tip: min 8, max 20, mixed case, digits
+	env: MULTIFON_NEW_PASSWORD
 ```
 
 ## Example

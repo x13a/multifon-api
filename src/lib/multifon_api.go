@@ -18,7 +18,7 @@ func (a API) String() string {
 }
 
 const (
-	Version = "0.1.1"
+	Version = "0.1.2"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -160,7 +160,7 @@ func (c *Client) SetAPI(api API) {
 	c.apiUrl = APIUrlMap[api]
 }
 
-func (c *Client) Request(
+func (c *Client) request(
 	urlPath string,
 	params map[string]string,
 ) (*http.Request, error) {
@@ -187,7 +187,7 @@ func (c *Client) Do(
 	params map[string]string,
 	data Response,
 ) error {
-	req, err := c.Request(urlPath, params)
+	req, err := c.request(urlPath, params)
 	if err != nil {
 		return err
 	}

@@ -135,6 +135,17 @@ func getRoutingByDescription(s string) multifonapi.Routing {
 	return -1
 }
 
+func format(s string, m map[string]interface{}) string {
+	args := make([]string, len(m)*2)
+	i := 0
+	for k, v := range m {
+		args[i] = fmt.Sprintf("{%s}", k)
+		args[i+1] = fmt.Sprint(v)
+		i += 2
+	}
+	return strings.NewReplacer(args...).Replace(s)
+}
+
 func printUsage() {
 	var name string
 	if len(os.Args) < 1 {
@@ -147,40 +158,64 @@ func printUsage() {
 	routingDescriptions := getRoutingDescriptions()
 	sort.Strings(routingDescriptions)
 	sep := " | "
-	fmt.Fprintf(
+	fmt.Fprintln(
 		flag.CommandLine.Output(),
-		"%s [-%s%s] ( -%s <%s> | -%s <%s> -%s <%s> )\n"+
-			"%s [-%s <%s>] [-%s <%s>] <%s> [<%s>]\n\n"+
-			"[-%s] * Print help and exit\n"+
-			"[-%s] * Print version and exit\n\n"+
-			"%s:\n"+
-			"  JSON filepath (fields: [%s, %s, new_%s]; stdin: %s)\n\n"+
-			"%s:\n"+
-			"  string (env: %s)\n\n"+
-			"%s:\n"+
-			"  string (env: %s)\n\n"+
-			"%s:\n"+
-			"  { %s } (default: %s)\n\n"+
-			"%s:\n"+
-			"  time.ParseDuration (default: %s)\n\n"+
-			"%s:\n"+
-			"  { %s }\n\n"+
-			"%s:\n"+
-			"  %s { %s }\n"+
-			"  %s <NUMBER> (2 .. 20)\n"+
-			"  %s <NEW_%s>\n"+
-			"\t(tip: `min 8, max 20, mixed case, digits`; env: %s)\n",
-		name, FlagHelp, FlagVersion, FlagConfig, MetaVarConfig, FlagLogin,
-		MetaVarLogin, FlagPassword, MetaVarPassword,
-		strings.Repeat(" ", len(name)), FlagAPI, MetaVarAPI, FlagTimeout,
-		MetaVarTimeout, MetaVarCommand, MetaVarCommandArg, FlagHelp,
-		FlagVersion, MetaVarConfig, FlagLogin, FlagPassword, FlagPassword,
-		ArgStdin, MetaVarLogin, EnvLogin, MetaVarPassword, EnvPassword,
-		MetaVarAPI, strings.Join(apiChoices, sep), multifonapi.APIDefault,
-		MetaVarTimeout, multifonapi.DefaultTimeout, MetaVarCommand,
-		strings.Join(Commands[:], sep), MetaVarCommandArg, CommandRouting,
-		strings.Join(routingDescriptions, sep), CommandLines,
-		CommandSetPassword, MetaVarPassword, EnvNewPassword,
+		format(
+			"{NAME} [-{h}{V}] ( -{c} <{C}> | -{l} <{L}> -{p} <{P}> )\n"+
+				"{TAB} [-{a} <{A}>] [-{t} <{T}>] <{CMD}> [<{CMDARG}>]\n\n"+
+				"[-{h}] * Print help and exit\n"+
+				"[-{V}] * Print version and exit\n\n"+
+				"{C}:\n"+
+				"  JSON filepath\n"+
+				"    + fields: [{l}, {p}, new_{p}]\n"+
+				"    + stdin:  {STDIN}\n\n"+
+				"{L}:\n"+
+				"  string (env: {ENVL})\n\n"+
+				"{P}:\n"+
+				"  string (env: {ENVP})\n\n"+
+				"{A}:\n"+
+				"  { {CA} } (default: {DEFA})\n\n"+
+				"{T}:\n"+
+				"  time.ParseDuration (default: {DEFT})\n\n"+
+				"{CMD}:\n"+
+				"  { {CCMD} }\n\n"+
+				"{CMDARG}:\n"+
+				"  {CMDR} { {CCMDR} }\n"+
+				"  {CMDL} <NUMBER> (2 .. 20)\n"+
+				"  {CMDSP} <NEW_{P}>\n"+
+				"\ttip: min 8, max 20, mixed case, digits\n"+
+				"\tenv: {ENVNP}",
+			map[string]interface{}{
+				"NAME":   name,
+				"TAB":    strings.Repeat(" ", len(name)),
+				"h":      FlagHelp,
+				"V":      FlagVersion,
+				"c":      FlagConfig,
+				"l":      FlagLogin,
+				"p":      FlagPassword,
+				"a":      FlagAPI,
+				"t":      FlagTimeout,
+				"C":      MetaVarConfig,
+				"L":      MetaVarLogin,
+				"P":      MetaVarPassword,
+				"A":      MetaVarAPI,
+				"T":      MetaVarTimeout,
+				"CMD":    MetaVarCommand,
+				"CMDARG": MetaVarCommandArg,
+				"STDIN":  ArgStdin,
+				"DEFA":   multifonapi.APIDefault,
+				"DEFT":   multifonapi.DefaultTimeout,
+				"ENVL":   EnvLogin,
+				"ENVP":   EnvPassword,
+				"ENVNP":  EnvNewPassword,
+				"CA":     strings.Join(apiChoices, sep),
+				"CCMD":   strings.Join(Commands[:], sep),
+				"CCMDR":  strings.Join(routingDescriptions, sep),
+				"CMDR":   CommandRouting,
+				"CMDL":   CommandLines,
+				"CMDSP":  CommandSetPassword,
+			},
+		),
 	)
 }
 
