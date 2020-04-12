@@ -76,7 +76,7 @@ func get(t *testing.T, name string) {
 				Interface().(DescriptionResponse); ok &&
 				obj.Description() == "" {
 
-				t.Fatalf("empty response description, %+v\n", obj)
+				t.Fatalf("empty response description, %+v", obj)
 			}
 		})
 	}

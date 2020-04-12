@@ -18,7 +18,7 @@ func (a API) String() string {
 }
 
 const (
-	Version = "0.1.3"
+	Version = "0.1.4"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
