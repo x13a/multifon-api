@@ -23,7 +23,7 @@ multifon-api [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
 
 CONFIG:
   JSON filepath
-    + fields: [login, password, new_password]
+    + fields: [login, password, new_password, api, timeout]
     + stdin:  -
 
 LOGIN:
@@ -51,12 +51,14 @@ COMMAND_ARGUMENT:
 
 ## Example
 
-Config (*new_password* can be omitted, useful for *set-password*):
+Config (minimal has *login* and *password* to use without other flags):
 ```json
 {
 	"login": "LOGIN",
 	"password": "PASSWORD",
-	"new_password": "NEW_PASSWORD"
+	"new_password": "NEW_PASSWORD",
+	"api": "multifon",
+	"timeout": "30s"
 }
 ```
 

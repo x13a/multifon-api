@@ -17,13 +17,15 @@ import (
 )
 
 type Config struct {
-	Login       string `json:"login"`
-	Password    string `json:"password"`
-	NewPassword string `json:"new_password"`
+	Login       string   `json:"login,omitempty"`
+	Password    string   `json:"password"`
+	NewPassword string   `json:"new_password"`
+	API         API      `json:"api,omitempty"`
+	Timeout     *Timeout `json:"timeout,omitempty"`
 	path        string
 }
 
-func (c *Config) String() string {
+func (c Config) String() string {
 	return ""
 }
 
@@ -43,10 +45,42 @@ func (c *Config) Set(s string) error {
 	return json.NewDecoder(file).Decode(c)
 }
 
-type API multifonapi.API
+type (
+	Timeout time.Duration
+	API     multifonapi.API
+)
 
-func (a *API) String() string {
-	return string(*a)
+func (t Timeout) String() string {
+	return t.unwrap().String()
+}
+
+func (t *Timeout) Set(s string) error {
+	v, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+	*t = Timeout(v)
+	return nil
+}
+
+func (t Timeout) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.String())
+}
+
+func (t *Timeout) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	return t.Set(s)
+}
+
+func (t Timeout) unwrap() time.Duration {
+	return time.Duration(t)
+}
+
+func (a API) String() string {
+	return string(a)
 }
 
 func (a *API) Set(s string) error {
@@ -55,11 +89,23 @@ func (a *API) Set(s string) error {
 		*a = API(api)
 		return nil
 	}
-	return errors.New("parse error")
+	return errors.New("api parse error")
 }
 
-func (a *API) Unwrap() multifonapi.API {
-	return multifonapi.API(*a)
+func (a API) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.String())
+}
+
+func (a *API) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	return a.Set(s)
+}
+
+func (a API) unwrap() multifonapi.API {
+	return multifonapi.API(a)
 }
 
 const (
@@ -167,7 +213,7 @@ func printUsage() {
 				"[-{V}] * Print version and exit\n\n"+
 				"{C}:\n"+
 				"  JSON filepath\n"+
-				"    + fields: [{l}, {p}, new_{p}]\n"+
+				"    + fields: [{l}, {p}, new_{p}, {a}, {t}]\n"+
 				"    + stdin:  {STDIN}\n\n"+
 				"{L}:\n"+
 				"  string (env: {ENVL})\n\n"+
@@ -203,7 +249,7 @@ func printUsage() {
 				"CMD":    MetaVarCommand,
 				"CMDARG": MetaVarCommandArg,
 				"STDIN":  ArgStdin,
-				"DEFA":   multifonapi.APIDefault,
+				"DEFA":   multifonapi.DefaultAPI,
 				"DEFT":   multifonapi.DefaultTimeout,
 				"ENVL":   EnvLogin,
 				"ENVP":   EnvPassword,
@@ -305,12 +351,7 @@ func parseArgs() *Opts {
 	flag.StringVar(&opts.login, FlagLogin, "", "")
 	flag.StringVar(&opts.password, FlagPassword, "", "")
 	flag.Var(&opts.api, FlagAPI, "")
-	flag.DurationVar(
-		&opts.timeout,
-		FlagTimeout,
-		multifonapi.DefaultTimeout,
-		"",
-	)
+	flag.DurationVar(&opts.timeout, FlagTimeout, -1, "")
 	flag.Parse()
 	if *isHelp {
 		flag.Usage()
@@ -328,6 +369,12 @@ func parseArgs() *Opts {
 	}
 	parseCommand(opts)
 	parseCommandArg(opts)
+	if opts.api == "" {
+		opts.api = opts.config.API
+	}
+	if opts.timeout < 0 && opts.config.Timeout != nil {
+		opts.timeout = opts.config.Timeout.unwrap()
+	}
 	return opts
 }
 
@@ -337,7 +384,6 @@ func updateConfigFile(opts *Opts) error {
 		return err
 	}
 	defer file.Close()
-	opts.config.Login = opts.login
 	opts.config.Password = opts.commandArg.(string)
 	opts.config.NewPassword = opts.password
 	enc := json.NewEncoder(file)
@@ -347,11 +393,15 @@ func updateConfigFile(opts *Opts) error {
 
 func main() {
 	opts := parseArgs()
+	var httpClient *http.Client
+	if opts.timeout >= 0 {
+		httpClient = &http.Client{Timeout: opts.timeout}
+	}
 	client := multifonapi.NewClient(
 		opts.login,
 		opts.password,
-		opts.api.Unwrap(),
-		&http.Client{Timeout: opts.timeout},
+		opts.api.unwrap(),
+		httpClient,
 	)
 	fatalIfErr := func(err error) {
 		if err != nil {

@@ -18,11 +18,10 @@ func (a API) String() string {
 }
 
 const (
-	Version = "0.1.2"
+	Version = "0.1.3"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
-	APIDefault      = APIMultifon
 
 	RoutingGSM    Routing = 0
 	RoutingSIP    Routing = 1
@@ -31,6 +30,7 @@ const (
 	StatusActive  = 0
 	StatusBlocked = 1
 
+	DefaultAPI     = APIMultifon
 	DefaultTimeout = 30 * time.Second
 )
 
@@ -292,7 +292,7 @@ func NewClient(
 	httpClient *http.Client,
 ) *Client {
 	if api == "" {
-		api = APIDefault
+		api = DefaultAPI
 	}
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: DefaultTimeout}
