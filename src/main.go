@@ -16,6 +16,50 @@ import (
 	multifonapi "./lib"
 )
 
+const (
+	FlagHelp     = "h"
+	FlagVersion  = "V"
+	FlagConfig   = "config"
+	FlagLogin    = "login"
+	FlagPassword = "password"
+	FlagAPI      = "api"
+	FlagTimeout  = "timeout"
+
+	MetaVarConfig     = "CONFIG"
+	MetaVarLogin      = "LOGIN"
+	MetaVarPassword   = "PASSWORD"
+	MetaVarAPI        = "API"
+	MetaVarTimeout    = "TIMEOUT"
+	MetaVarCommand    = "COMMAND"
+	MetaVarCommandArg = "COMMAND_ARGUMENT"
+
+	CommandBalance     = "balance"
+	CommandRouting     = "routing"
+	CommandStatus      = "status"
+	CommandProfile     = "profile"
+	CommandLines       = "lines"
+	CommandSetPassword = "set-password"
+
+	ExOk     = 0
+	ExErr    = 1
+	ExArgErr = 2 // golang flag error exit code
+
+	EnvLogin       = "MULTIFON_LOGIN"
+	EnvPassword    = "MULTIFON_PASSWORD"
+	EnvNewPassword = "MULTIFON_NEW_PASSWORD"
+
+	ArgStdin = "-"
+)
+
+var Commands = [...]string{
+	CommandBalance,
+	CommandRouting,
+	CommandStatus,
+	CommandProfile,
+	CommandLines,
+	CommandSetPassword,
+}
+
 type Config struct {
 	Login       string   `json:"login,omitempty"`
 	Password    string   `json:"password"`
@@ -106,50 +150,6 @@ func (a *API) UnmarshalJSON(b []byte) error {
 
 func (a API) unwrap() multifonapi.API {
 	return multifonapi.API(a)
-}
-
-const (
-	FlagHelp     = "h"
-	FlagVersion  = "V"
-	FlagConfig   = "config"
-	FlagLogin    = "login"
-	FlagPassword = "password"
-	FlagAPI      = "api"
-	FlagTimeout  = "timeout"
-
-	MetaVarConfig     = "CONFIG"
-	MetaVarLogin      = "LOGIN"
-	MetaVarPassword   = "PASSWORD"
-	MetaVarAPI        = "API"
-	MetaVarTimeout    = "TIMEOUT"
-	MetaVarCommand    = "COMMAND"
-	MetaVarCommandArg = "COMMAND_ARGUMENT"
-
-	CommandBalance     = "balance"
-	CommandRouting     = "routing"
-	CommandStatus      = "status"
-	CommandProfile     = "profile"
-	CommandLines       = "lines"
-	CommandSetPassword = "set-password"
-
-	ExOk     = 0
-	ExErr    = 1
-	ExArgErr = 2 // golang flag error exit code
-
-	EnvLogin       = "MULTIFON_LOGIN"
-	EnvPassword    = "MULTIFON_PASSWORD"
-	EnvNewPassword = "MULTIFON_NEW_PASSWORD"
-
-	ArgStdin = "-"
-)
-
-var Commands = [...]string{
-	CommandBalance,
-	CommandRouting,
-	CommandStatus,
-	CommandProfile,
-	CommandLines,
-	CommandSetPassword,
 }
 
 func getAPIChoices() []string {

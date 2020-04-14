@@ -4,21 +4,13 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
 
-type (
-	API     string
-	Routing int
-)
-
-func (a API) String() string {
-	return string(a)
-}
-
 const (
-	Version = "0.1.4"
+	Version = "0.1.5"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -45,6 +37,23 @@ var (
 		RoutingSIPGSM: "SIP+GSM",
 	}
 )
+
+type (
+	API     string
+	Routing int
+)
+
+func (a API) String() string {
+	return string(a)
+}
+
+func urlMustParse(s string) *url.URL {
+	u, err := url.Parse(s)
+	if err != nil {
+		panic(err)
+	}
+	return u
+}
 
 type ResultError struct {
 	Code        int
@@ -148,7 +157,7 @@ type ResponseLines struct {
 type Client struct {
 	login      string
 	password   string
-	apiUrl     string
+	apiURL     *url.URL
 	httpClient *http.Client
 }
 
@@ -157,18 +166,18 @@ func (c *Client) GetLogin() string {
 }
 
 func (c *Client) SetAPI(api API) {
-	c.apiUrl = APIUrlMap[api]
+	c.apiURL = urlMustParse(APIUrlMap[api])
 }
 
 func (c *Client) request(
 	urlPath string,
 	params map[string]string,
 ) (*http.Request, error) {
-	reqUrl, err := urlJoin(c.apiUrl, urlPath)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(http.MethodPost, reqUrl, nil)
+	req, err := http.NewRequest(
+		http.MethodPost,
+		c.apiURL.ResolveReference(urlMustParse(urlPath)).String(),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -297,10 +306,11 @@ func NewClient(
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: DefaultTimeout}
 	}
-	return &Client{
+	c := &Client{
 		login:      login,
 		password:   password,
-		apiUrl:     APIUrlMap[api],
 		httpClient: httpClient,
 	}
+	c.SetAPI(api)
+	return c
 }
