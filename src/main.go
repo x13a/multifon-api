@@ -61,11 +61,11 @@ var Commands = [...]string{
 }
 
 type Config struct {
-	Login       string   `json:"login,omitempty"`
-	Password    string   `json:"password"`
-	NewPassword string   `json:"new_password"`
-	API         API      `json:"api,omitempty"`
-	Timeout     *Timeout `json:"timeout,omitempty"`
+	Login       string    `json:"login,omitempty"`
+	Password    string    `json:"password"`
+	NewPassword string    `json:"new_password"`
+	API         API       `json:"api,omitempty"`
+	Timeout     *Duration `json:"timeout,omitempty"`
 	path        string
 }
 
@@ -90,37 +90,37 @@ func (c *Config) Set(s string) error {
 }
 
 type (
-	Timeout time.Duration
-	API     multifonapi.API
+	Duration time.Duration
+	API      multifonapi.API
 )
 
-func (t Timeout) String() string {
-	return t.unwrap().String()
+func (d Duration) String() string {
+	return d.Unwrap().String()
 }
 
-func (t *Timeout) Set(s string) error {
+func (d *Duration) Set(s string) error {
 	v, err := time.ParseDuration(s)
 	if err != nil {
 		return err
 	}
-	*t = Timeout(v)
+	*d = Duration(v)
 	return nil
 }
 
-func (t Timeout) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.String())
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
 }
 
-func (t *Timeout) UnmarshalJSON(b []byte) error {
+func (d *Duration) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
 		return err
 	}
-	return t.Set(s)
+	return d.Set(s)
 }
 
-func (t Timeout) unwrap() time.Duration {
-	return time.Duration(t)
+func (d Duration) Unwrap() time.Duration {
+	return time.Duration(d)
 }
 
 func (a API) String() string {
@@ -148,7 +148,7 @@ func (a *API) UnmarshalJSON(b []byte) error {
 	return a.Set(s)
 }
 
-func (a API) unwrap() multifonapi.API {
+func (a API) Unwrap() multifonapi.API {
 	return multifonapi.API(a)
 }
 
@@ -373,7 +373,7 @@ func parseArgs() *Opts {
 		opts.api = opts.config.API
 	}
 	if opts.timeout < 0 && opts.config.Timeout != nil {
-		opts.timeout = opts.config.Timeout.unwrap()
+		opts.timeout = opts.config.Timeout.Unwrap()
 	}
 	return opts
 }
@@ -400,7 +400,7 @@ func main() {
 	client := multifonapi.NewClient(
 		opts.login,
 		opts.password,
-		opts.api.unwrap(),
+		opts.api.Unwrap(),
 		httpClient,
 	)
 	fatalIfErr := func(err error) {

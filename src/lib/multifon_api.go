@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	Version = "0.1.5"
+	Version = "0.1.6"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
