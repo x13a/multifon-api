@@ -379,16 +379,22 @@ func parseArgs() *Opts {
 }
 
 func updateConfigFile(opts *Opts) error {
-	file, err := os.OpenFile(opts.config.path, os.O_WRONLY|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(
+		opts.config.path,
+		os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
+		0600,
+	)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 	opts.config.Password = opts.commandArg.(string)
 	opts.config.NewPassword = opts.password
 	enc := json.NewEncoder(file)
 	enc.SetIndent("", "\t")
-	return enc.Encode(opts.config)
+	if err := enc.Encode(opts.config); err != nil {
+		return err
+	}
+	return file.Close()
 }
 
 func main() {
