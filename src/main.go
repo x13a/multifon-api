@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -415,15 +416,16 @@ func main() {
 			os.Exit(ExErr)
 		}
 	}
+	ctx := context.Background()
 	strOk := "OK"
 	switch opts.command {
 	case CommandBalance:
-		res, err := client.GetBalance()
+		res, err := client.GetBalance(ctx)
 		fatalIfErr(err)
 		fmt.Println(res.Balance)
 	case CommandRouting:
 		if opts.commandArg == nil {
-			res, err := client.GetRouting()
+			res, err := client.GetRouting(ctx)
 			fatalIfErr(err)
 			val := res.Description()
 			if val == "" {
@@ -432,12 +434,15 @@ func main() {
 				fmt.Println(val)
 			}
 		} else {
-			_, err := client.SetRouting(opts.commandArg.(multifonapi.Routing))
+			_, err := client.SetRouting(
+				ctx,
+				opts.commandArg.(multifonapi.Routing),
+			)
 			fatalIfErr(err)
 			fmt.Println(strOk)
 		}
 	case CommandStatus:
-		res, err := client.GetStatus()
+		res, err := client.GetStatus(ctx)
 		fatalIfErr(err)
 		val := res.Description()
 		if val == "" {
@@ -448,21 +453,21 @@ func main() {
 		}
 		fmt.Println(val)
 	case CommandProfile:
-		res, err := client.GetProfile()
+		res, err := client.GetProfile(ctx)
 		fatalIfErr(err)
 		fmt.Println(res.MSISDN)
 	case CommandLines:
 		if opts.commandArg == nil {
-			res, err := client.GetLines()
+			res, err := client.GetLines(ctx)
 			fatalIfErr(err)
 			fmt.Println(res.Lines)
 		} else {
-			_, err := client.SetLines(opts.commandArg.(int))
+			_, err := client.SetLines(ctx, opts.commandArg.(int))
 			fatalIfErr(err)
 			fmt.Println(strOk)
 		}
 	case CommandSetPassword:
-		_, err := client.SetPassword(opts.commandArg.(string))
+		_, err := client.SetPassword(ctx, opts.commandArg.(string))
 		fatalIfErr(err)
 		if opts.config.path != "" {
 			fatalIfErr(updateConfigFile(opts))

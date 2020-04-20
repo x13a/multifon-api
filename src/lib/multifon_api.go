@@ -1,6 +1,7 @@
 package multifonapi
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 )
 
 const (
-	Version = "0.1.7"
+	Version = "0.1.8"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -23,7 +24,7 @@ const (
 	StatusBlocked = 1
 
 	DefaultAPI     = APIMultifon
-	DefaultTimeout = 30 * time.Second
+	DefaultTimeout = 1 << 5 * time.Second
 )
 
 var (
@@ -170,10 +171,12 @@ func (c *Client) SetAPI(api API) {
 }
 
 func (c *Client) request(
+	ctx context.Context,
 	urlPath string,
 	params map[string]string,
 ) (*http.Request, error) {
-	req, err := http.NewRequest(
+	req, err := http.NewRequestWithContext(
+		ctx,
 		http.MethodPost,
 		c.apiURL.ResolveReference(urlMustParse(urlPath)).String(),
 		nil,
@@ -192,11 +195,12 @@ func (c *Client) request(
 }
 
 func (c *Client) Do(
+	ctx context.Context,
 	urlPath string,
 	params map[string]string,
 	data Response,
 ) error {
-	req, err := c.request(urlPath, params)
+	req, err := c.request(ctx, urlPath, params)
 	if err != nil {
 		return err
 	}
@@ -217,24 +221,27 @@ func (c *Client) Do(
 	return data.ResultError()
 }
 
-func (c *Client) GetBalance() (*ResponseBalance, error) {
+func (c *Client) GetBalance(ctx context.Context) (*ResponseBalance, error) {
 	data := &ResponseBalance{}
-	return data, c.Do("balance", nil, data)
+	return data, c.Do(ctx, "balance", nil, data)
 }
 
-func (c *Client) GetRouting() (*ResponseRouting, error) {
+func (c *Client) GetRouting(ctx context.Context) (*ResponseRouting, error) {
 	data := &ResponseRouting{}
-	return data, c.Do("routing", nil, data)
+	return data, c.Do(ctx, "routing", nil, data)
 }
 
 /*
 RoutingGSM, RoutingSIP, RoutingSIPGSM
 */
-func (c *Client) SetRouting(routing Routing) (*ResponseRouting, error) {
+func (c *Client) SetRouting(
+	ctx context.Context,
+	routing Routing,
+) (*ResponseRouting, error) {
 	k := "routing"
 	v := Routing(-1)
 	data := &ResponseRouting{Routing: v}
-	err := c.Do(k, map[string]string{k: strconv.Itoa(int(routing))}, data)
+	err := c.Do(ctx, k, map[string]string{k: strconv.Itoa(int(routing))}, data)
 	if err == nil && data.Routing != v {
 		err = &SetFailedError{
 			Key:          k,
@@ -245,32 +252,32 @@ func (c *Client) SetRouting(routing Routing) (*ResponseRouting, error) {
 	return data, err
 }
 
-func (c *Client) GetStatus() (*ResponseStatus, error) {
+func (c *Client) GetStatus(ctx context.Context) (*ResponseStatus, error) {
 	data := &ResponseStatus{}
-	return data, c.Do("status", nil, data)
+	return data, c.Do(ctx, "status", nil, data)
 }
 
 /*
 outdated?
 */
-func (c *Client) GetProfile() (*ResponseProfile, error) {
+func (c *Client) GetProfile(ctx context.Context) (*ResponseProfile, error) {
 	data := &ResponseProfile{}
-	return data, c.Do("profile", nil, data)
+	return data, c.Do(ctx, "profile", nil, data)
 }
 
-func (c *Client) GetLines() (*ResponseLines, error) {
+func (c *Client) GetLines(ctx context.Context) (*ResponseLines, error) {
 	data := &ResponseLines{}
-	return data, c.Do("lines", nil, data)
+	return data, c.Do(ctx, "lines", nil, data)
 }
 
 /*
 2 .. 20
 */
-func (c *Client) SetLines(n int) (*ResponseLines, error) {
+func (c *Client) SetLines(ctx context.Context, n int) (*ResponseLines, error) {
 	k := "lines"
 	v := -1
 	data := &ResponseLines{Lines: v}
-	err := c.Do(k, map[string]string{k: strconv.Itoa(n)}, data)
+	err := c.Do(ctx, k, map[string]string{k: strconv.Itoa(n)}, data)
 	if err == nil && data.Lines != v {
 		err = &SetFailedError{
 			Key:          k,
@@ -285,9 +292,17 @@ func (c *Client) SetLines(n int) (*ResponseLines, error) {
 min 8, max 20, mixed case, digits
 can return error and.. change password on server?
 */
-func (c *Client) SetPassword(password string) (*ResponseResult, error) {
+func (c *Client) SetPassword(
+	ctx context.Context,
+	password string,
+) (*ResponseResult, error) {
 	data := &ResponseResult{}
-	err := c.Do("password", map[string]string{"new_password": password}, data)
+	err := c.Do(
+		ctx,
+		"password",
+		map[string]string{"new_password": password},
+		data,
+	)
 	if err == nil {
 		c.password = password
 	}

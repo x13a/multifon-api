@@ -58,7 +58,7 @@ Config (minimal has *login* and *password* to use without other flags):
 	"password": "PASSWORD",
 	"new_password": "NEW_PASSWORD",
 	"api": "multifon",
-	"timeout": "30s"
+	"timeout": "32s"
 }
 ```
 

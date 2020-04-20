@@ -1,6 +1,7 @@
 package multifonapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -49,7 +50,7 @@ func reflectError(v []reflect.Value) error {
 }
 
 func getCall(t *testing.T, c *Client, name string) reflect.Value {
-	v := call(c, name)
+	v := call(c, name, context.Background())
 	if err := reflectError(v); err != nil {
 		t.Fatal(err.Error())
 	}
@@ -86,7 +87,12 @@ func set(t *testing.T, name string, values []interface{}) {
 	getFnName := getFnName(name)
 	setFnName := fmt.Sprint("Set", name)
 	_set := func(t *testing.T, c *Client, v interface{}) {
-		if err := reflectError(call(c, setFnName, v)); err != nil {
+		if err := reflectError(call(
+			c,
+			setFnName,
+			context.Background(),
+			v,
+		)); err != nil {
 			t.Error(err.Error())
 		}
 	}
@@ -162,7 +168,10 @@ func TestSetPassword(t *testing.T) {
 				Config.NewPassword,
 				Config.Password,
 			} {
-				if _, err := c.SetPassword(password); err != nil {
+				if _, err := c.SetPassword(
+					context.Background(),
+					password,
+				); err != nil {
 					t.Fatal(err.Error())
 				}
 				delay()
