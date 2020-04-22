@@ -64,17 +64,17 @@ Config (minimal has *login* and *password* to use without other flags):
 
 To get balance:
 ```sh
-$ multifon-api -config ~/multifon.conf balance
+$ multifon-api -config ~/multifon.json balance
 ```
 
 To set routing:
 ```sh
-$ multifon-api -config ~/multifon.conf routing gsm
+$ multifon-api -config ~/multifon.json routing gsm
 ```
 
 To get status (stdin config):
 ```sh
-$ cat ~/multifon.conf | multifon-api -config - status
+$ cat ~/multifon.json | multifon-api -config - status
 ```
 
 To set lines (env identity, **space before first variable!**):
