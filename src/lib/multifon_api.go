@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Version = "0.1.8"
+	Version = "0.1.9"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -103,10 +103,7 @@ type ResponseResult struct {
 
 func (r *ResponseResult) ResultError() error {
 	if r.Result.Code != http.StatusOK {
-		return &ResultError{
-			Code:        r.Result.Code,
-			Description: r.Result.Description,
-		}
+		return &ResultError{r.Result.Code, r.Result.Description}
 	}
 	return nil
 }
@@ -210,10 +207,7 @@ func (c *Client) Do(
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < 600 {
-		return &HTTPStatusError{
-			Code:   resp.StatusCode,
-			Status: resp.Status,
-		}
+		return &HTTPStatusError{resp.StatusCode, resp.Status}
 	}
 	if err := xml.NewDecoder(resp.Body).Decode(data); err != nil {
 		return err
@@ -243,11 +237,7 @@ func (c *Client) SetRouting(
 	data := &ResponseRouting{Routing: v}
 	err := c.Do(ctx, k, map[string]string{k: strconv.Itoa(int(routing))}, data)
 	if err == nil && data.Routing != v {
-		err = &SetFailedError{
-			Key:          k,
-			Value:        routing,
-			CurrentValue: data.Routing,
-		}
+		err = &SetFailedError{k, routing, data.Routing}
 	}
 	return data, err
 }
@@ -279,11 +269,7 @@ func (c *Client) SetLines(ctx context.Context, n int) (*ResponseLines, error) {
 	data := &ResponseLines{Lines: v}
 	err := c.Do(ctx, k, map[string]string{k: strconv.Itoa(n)}, data)
 	if err == nil && data.Lines != v {
-		err = &SetFailedError{
-			Key:          k,
-			Value:        n,
-			CurrentValue: data.Lines,
-		}
+		err = &SetFailedError{k, n, data.Lines}
 	}
 	return data, err
 }
