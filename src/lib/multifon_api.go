@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Version = "0.1.9"
+	Version = "0.1.10"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -46,14 +46,6 @@ type (
 
 func (a API) String() string {
 	return string(a)
-}
-
-func urlMustParse(s string) *url.URL {
-	u, err := url.Parse(s)
-	if err != nil {
-		panic(err)
-	}
-	return u
 }
 
 type ResultError struct {
@@ -164,18 +156,29 @@ func (c *Client) GetLogin() string {
 }
 
 func (c *Client) SetAPI(api API) {
-	c.apiURL = urlMustParse(APIUrlMap[api])
+	u, err := url.ParseRequestURI(APIUrlMap[api])
+	if err != nil {
+		panic(err)
+	}
+	if u.Scheme != "https" {
+		panic("insecure scheme")
+	}
+	c.apiURL = u
 }
 
 func (c *Client) request(
 	ctx context.Context,
-	urlPath string,
+	apiReference string,
 	params map[string]string,
 ) (*http.Request, error) {
+	ref, err := url.Parse(apiReference)
+	if err != nil {
+		panic(err)
+	}
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.apiURL.ResolveReference(urlMustParse(urlPath)).String(),
+		c.apiURL.ResolveReference(ref).String(),
 		nil,
 	)
 	if err != nil {
@@ -193,11 +196,11 @@ func (c *Client) request(
 
 func (c *Client) Do(
 	ctx context.Context,
-	urlPath string,
+	apiReference string,
 	params map[string]string,
 	data Response,
 ) error {
-	req, err := c.request(ctx, urlPath, params)
+	req, err := c.request(ctx, apiReference, params)
 	if err != nil {
 		return err
 	}

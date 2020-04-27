@@ -266,12 +266,8 @@ func printUsage() {
 	)
 }
 
-func flagNameToFlag(name string) string {
-	return fmt.Sprint("-", name)
-}
-
-func fatalParseArgs(k, v string) {
-	fmt.Fprintf(os.Stderr, "Failed to parse argument %s: `%s`\n", k, v)
+func fatalParseArg(k, v string) {
+	fmt.Fprintf(os.Stderr, "Failed to parse argument <%s>: `%s`\n", k, v)
 	os.Exit(ExArgErr)
 }
 
@@ -283,7 +279,7 @@ func parseCommand(opts *Opts) {
 			return
 		}
 	}
-	fatalParseArgs(MetaVarCommand, cmd)
+	fatalParseArg(MetaVarCommand, cmd)
 }
 
 func parseCommandArg(opts *Opts) {
@@ -295,7 +291,7 @@ func parseCommandArg(opts *Opts) {
 		}
 		routing := getRoutingByDescription(strings.ToUpper(arg))
 		if routing == -1 {
-			fatalParseArgs(MetaVarCommandArg, arg)
+			fatalParseArg(MetaVarCommandArg, arg)
 		}
 		opts.commandArg = routing
 	case CommandLines:
@@ -304,12 +300,12 @@ func parseCommandArg(opts *Opts) {
 		}
 		n, err := strconv.Atoi(arg)
 		if err != nil {
-			fatalParseArgs(MetaVarCommandArg, arg)
+			fatalParseArg(MetaVarCommandArg, arg)
 		}
 		opts.commandArg = n
 	case CommandSetPassword:
 		if !parseIdentity(&arg, opts.config.NewPassword, EnvNewPassword) {
-			fatalParseArgs(MetaVarCommandArg, arg)
+			fatalParseArg(MetaVarCommandArg, arg)
 		}
 		opts.commandArg = arg
 	}
@@ -363,10 +359,10 @@ func parseArgs() *Opts {
 		os.Exit(ExOk)
 	}
 	if !parseIdentity(&opts.login, opts.config.Login, EnvLogin) {
-		fatalParseArgs(flagNameToFlag(FlagLogin), opts.login)
+		fatalParseArg(MetaVarLogin, opts.login)
 	}
 	if !parseIdentity(&opts.password, opts.config.Password, EnvPassword) {
-		fatalParseArgs(flagNameToFlag(FlagPassword), opts.password)
+		fatalParseArg(MetaVarPassword, opts.password)
 	}
 	parseCommand(opts)
 	parseCommandArg(opts)
@@ -392,10 +388,11 @@ func updateConfigFile(opts *Opts) error {
 	opts.config.NewPassword = opts.password
 	enc := json.NewEncoder(file)
 	enc.SetIndent("", "\t")
-	if err := enc.Encode(opts.config); err != nil {
-		return err
+	err = enc.Encode(opts.config)
+	if err1 := file.Close(); err == nil {
+		err = err1
 	}
-	return file.Close()
+	return err
 }
 
 func main() {

@@ -36,7 +36,7 @@ API:
   { emotion | multifon } (default: multifon)
 
 TIMEOUT:
-  time.ParseDuration (default: 30s)
+  time.ParseDuration (default: 32s)
 
 COMMAND:
   { balance | routing | status | profile | lines | set-password }
