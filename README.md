@@ -22,9 +22,7 @@ multifon-api [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
 [-V] * Print version and exit
 
 CONFIG:
-  JSON filepath
-    + fields: [login, password, new_password, api, timeout]
-    + stdin:  -
+  filepath (stdin: -)
 
 LOGIN:
   string (env: MULTIFON_LOGIN)
@@ -51,30 +49,19 @@ COMMAND_ARGUMENT:
 
 ## Example
 
-Config (minimal has *login* and *password* to use without other flags):
-```json
-{
-	"login": "LOGIN",
-	"password": "PASSWORD",
-	"new_password": "NEW_PASSWORD",
-	"api": "multifon",
-	"timeout": "32s"
-}
-```
-
 To get balance:
 ```sh
-$ multifon-api -config ~/multifon.json balance
+$ multifon-api -config ~/multifon-api.json balance
 ```
 
 To set routing:
 ```sh
-$ multifon-api -config ~/multifon.json routing gsm
+$ multifon-api -config ~/multifon-api.json routing gsm
 ```
 
 To get status (stdin config):
 ```sh
-$ cat ~/multifon.json | multifon-api -config - status
+$ cat ~/multifon-api.json | multifon-api -config - status
 ```
 
 To set lines (env identity, **space before first variable!**):

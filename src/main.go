@@ -186,7 +186,7 @@ func format(s string, m map[string]interface{}) string {
 	args := make([]string, len(m)*2)
 	i := 0
 	for k, v := range m {
-		args[i] = fmt.Sprintf("{%s}", k)
+		args[i] = "{" + k + "}"
 		args[i+1] = fmt.Sprint(v)
 		i += 2
 	}
@@ -213,9 +213,7 @@ func printUsage() {
 				"[-{h}] * Print help and exit\n"+
 				"[-{V}] * Print version and exit\n\n"+
 				"{C}:\n"+
-				"  JSON filepath\n"+
-				"    + fields: [{l}, {p}, new_{p}, {a}, {t}]\n"+
-				"    + stdin:  {STDIN}\n\n"+
+				"  filepath (stdin: {STDIN})\n\n"+
 				"{L}:\n"+
 				"  string (env: {ENVL})\n\n"+
 				"{P}:\n"+
@@ -446,7 +444,7 @@ func main() {
 			val = strconv.Itoa(res.Status)
 		}
 		if res.Expires != "" {
-			val = fmt.Sprintf("%s:%s", val, res.Expires)
+			val += ":" + res.Expires
 		}
 		fmt.Println(val)
 	case CommandProfile:

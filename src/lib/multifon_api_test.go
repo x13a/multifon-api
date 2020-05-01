@@ -3,7 +3,7 @@ package multifonapi
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"flag"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,6 +25,16 @@ type ConfigType struct {
 	Login       string `json:"login"`
 	Password    string `json:"password"`
 	NewPassword string `json:"new_password"`
+}
+
+func parseFlag() {
+	flag.StringVar(
+		&ConfigPath,
+		"config",
+		ConfigPath,
+		"Path to configuration file",
+	)
+	flag.Parse()
 }
 
 func loadConfig() error {
@@ -58,7 +68,7 @@ func getCall(t *testing.T, c *Client, name string) reflect.Value {
 }
 
 func getFnName(s string) string {
-	return fmt.Sprint("Get", s)
+	return "Get" + s
 }
 
 func newClient(api API) *Client {
@@ -85,7 +95,7 @@ func get(t *testing.T, name string) {
 
 func set(t *testing.T, name string, values []interface{}) {
 	getFnName := getFnName(name)
-	setFnName := fmt.Sprint("Set", name)
+	setFnName := "Set" + name
 	_set := func(t *testing.T, c *Client, v interface{}) {
 		if err := reflectError(call(
 			c,
@@ -117,6 +127,7 @@ func set(t *testing.T, name string, values []interface{}) {
 }
 
 func TestMain(m *testing.M) {
+	parseFlag()
 	if err := loadConfig(); err != nil {
 		log.Fatalln(err.Error())
 	}
