@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -18,22 +17,6 @@ import (
 )
 
 const (
-	FlagHelp     = "h"
-	FlagVersion  = "V"
-	FlagConfig   = "config"
-	FlagLogin    = "login"
-	FlagPassword = "password"
-	FlagAPI      = "api"
-	FlagTimeout  = "timeout"
-
-	MetaVarConfig     = "CONFIG"
-	MetaVarLogin      = "LOGIN"
-	MetaVarPassword   = "PASSWORD"
-	MetaVarAPI        = "API"
-	MetaVarTimeout    = "TIMEOUT"
-	MetaVarCommand    = "COMMAND"
-	MetaVarCommandArg = "COMMAND_ARGUMENT"
-
 	CommandBalance     = "balance"
 	CommandRouting     = "routing"
 	CommandStatus      = "status"
@@ -41,24 +24,57 @@ const (
 	CommandLines       = "lines"
 	CommandSetPassword = "set-password"
 
-	ExOk     = 0
-	ExErr    = 1
-	ExArgErr = 2 // golang flag error exit code
-
 	EnvLogin       = "MULTIFON_LOGIN"
 	EnvPassword    = "MULTIFON_PASSWORD"
 	EnvNewPassword = "MULTIFON_NEW_PASSWORD"
 
+	MetaVarCommand    = "COMMAND"
+	MetaVarCommandArg = "COMMAND_ARGUMENT"
+
+	ExOk     = 0
+	ExErr    = 1
+	ExArgErr = 2 // golang flag error exit code
+
 	ArgStdin = "-"
 )
 
-var Commands = [...]string{
-	CommandBalance,
-	CommandRouting,
-	CommandStatus,
-	CommandProfile,
-	CommandLines,
-	CommandSetPassword,
+var (
+	FlagHelp     = NewFlag("", "help")
+	FlagVersion  = NewFlag("V", "version")
+	FlagConfig   = NewFlag("", "config")
+	FlagLogin    = NewFlag("", "login")
+	FlagPassword = NewFlag("", "password")
+	FlagAPI      = NewFlag("", "api")
+	FlagTimeout  = NewFlag("", "timeout")
+
+	Commands = [...]string{
+		CommandBalance,
+		CommandRouting,
+		CommandStatus,
+		CommandProfile,
+		CommandLines,
+		CommandSetPassword,
+	}
+)
+
+type Flag struct {
+	ShortName string
+	LongName  string
+}
+
+func (f Flag) Names() []string {
+	return []string{f.ShortName, f.LongName}
+}
+
+func (f Flag) MetaVar() string {
+	return strings.ToUpper(f.LongName)
+}
+
+func NewFlag(short, long string) Flag {
+	if short == "" {
+		short = long[:1]
+	}
+	return Flag{short, long}
 }
 
 type Config struct {
@@ -134,7 +150,7 @@ func (a *API) Set(s string) error {
 		*a = API(api)
 		return nil
 	}
-	return errors.New("api parse error")
+	return fmt.Errorf("<%s> parse error", FlagAPI.MetaVar())
 }
 
 func (a API) MarshalJSON() ([]byte, error) {
@@ -205,61 +221,71 @@ func printUsage() {
 	routingDescriptions := getRoutingDescriptions()
 	sort.Strings(routingDescriptions)
 	sep := " | "
+	formatMap := map[string]interface{}{
+		"NAME":   name,
+		"TAB":    strings.Repeat(" ", len(name)),
+		"CMD":    MetaVarCommand,
+		"CMDARG": MetaVarCommandArg,
+		"STDIN":  ArgStdin,
+		"DEFA":   multifonapi.DefaultAPI,
+		"DEFT":   multifonapi.DefaultTimeout,
+		"ENVL":   EnvLogin,
+		"ENVP":   EnvPassword,
+		"ENVNP":  EnvNewPassword,
+		"CA":     strings.Join(apiChoices, sep),
+		"CCMD":   strings.Join(Commands[:], sep),
+		"CCMDR":  strings.Join(routingDescriptions, sep),
+		"CMDR":   CommandRouting,
+		"CMDL":   CommandLines,
+		"CMDSP":  CommandSetPassword,
+	}
+	for _, v := range []Flag{FlagHelp, FlagVersion} {
+		formatMap[v.ShortName] = v.ShortName
+	}
+	for _, v := range []Flag{
+		FlagConfig,
+		FlagLogin,
+		FlagPassword,
+		FlagAPI,
+		FlagTimeout,
+	} {
+		formatMap[v.ShortName] = v.ShortName
+		formatMap[v.ShortName+v.ShortName] = v.LongName
+		formatMap[strings.ToUpper(v.ShortName)] = v.MetaVar()
+	}
 	fmt.Fprintln(
 		flag.CommandLine.Output(),
-		format(
-			"{NAME} [-{h}{V}] ( -{c} <{C}> | -{l} <{L}> -{p} <{P}> )\n"+
-				"{TAB} [-{a} <{A}>] [-{t} <{T}>] <{CMD}> [<{CMDARG}>]\n\n"+
-				"[-{h}] * Print help and exit\n"+
-				"[-{V}] * Print version and exit\n\n"+
-				"{C}:\n"+
-				"  filepath (stdin: {STDIN})\n\n"+
-				"{L}:\n"+
-				"  string (env: {ENVL})\n\n"+
-				"{P}:\n"+
-				"  string (env: {ENVP})\n\n"+
-				"{A}:\n"+
-				"  { {CA} } (default: {DEFA})\n\n"+
-				"{T}:\n"+
-				"  time.ParseDuration (default: {DEFT})\n\n"+
-				"{CMD}:\n"+
-				"  { {CCMD} }\n\n"+
-				"{CMDARG}:\n"+
-				"  {CMDR} { {CCMDR} }\n"+
-				"  {CMDL} <NUMBER> (2 .. 20)\n"+
-				"  {CMDSP} <NEW_{P}>\n"+
-				"\ttip: min 8, max 20, mixed case, digits\n"+
-				"\tenv: {ENVNP}",
-			map[string]interface{}{
-				"NAME":   name,
-				"TAB":    strings.Repeat(" ", len(name)),
-				"h":      FlagHelp,
-				"V":      FlagVersion,
-				"c":      FlagConfig,
-				"l":      FlagLogin,
-				"p":      FlagPassword,
-				"a":      FlagAPI,
-				"t":      FlagTimeout,
-				"C":      MetaVarConfig,
-				"L":      MetaVarLogin,
-				"P":      MetaVarPassword,
-				"A":      MetaVarAPI,
-				"T":      MetaVarTimeout,
-				"CMD":    MetaVarCommand,
-				"CMDARG": MetaVarCommandArg,
-				"STDIN":  ArgStdin,
-				"DEFA":   multifonapi.DefaultAPI,
-				"DEFT":   multifonapi.DefaultTimeout,
-				"ENVL":   EnvLogin,
-				"ENVP":   EnvPassword,
-				"ENVNP":  EnvNewPassword,
-				"CA":     strings.Join(apiChoices, sep),
-				"CCMD":   strings.Join(Commands[:], sep),
-				"CCMDR":  strings.Join(routingDescriptions, sep),
-				"CMDR":   CommandRouting,
-				"CMDL":   CommandLines,
-				"CMDSP":  CommandSetPassword,
-			},
+		format(`{NAME} [-{h}{V}] ( -{cc} <{C}> | -{ll} <{L}> -{pp} <{P}> )
+{TAB} [-{aa} <{A}>] [-{tt} <{T}>] <{CMD}> [<{CMDARG}>]
+
+[-{h}] * Print help and exit
+[-{V}] * Print version and exit
+
+-{c}, -{cc}:
+  filepath (stdin: {STDIN})
+
+-{l}, -{ll}:
+  string (env: {ENVL})
+
+-{p}, -{pp}:
+  string (env: {ENVP})
+
+-{a}, -{aa}:
+  { {CA} } (default: {DEFA})
+
+-{t}, -{tt}:
+  time.ParseDuration (default: {DEFT})
+
+{CMD}:
+  { {CCMD} }
+
+{CMDARG}:
+  {CMDR} { {CCMDR} }
+  {CMDL} <NUMBER> (2 .. 20)
+  {CMDSP} <NEW_{P}>
+      tip: 8 <= x <= 20, mixed case, digits
+      env: {ENVNP}`,
+			formatMap,
 		),
 	)
 }
@@ -339,28 +365,44 @@ func parseArgs() *Opts {
 		flag.Usage()
 		os.Exit(ExArgErr)
 	}
+	var isHelp bool
+	var isVersion bool
 	opts := &Opts{}
-	isHelp := flag.Bool(FlagHelp, false, "")
-	isVersion := flag.Bool(FlagVersion, false, "")
-	flag.Var(&opts.config, FlagConfig, "")
-	flag.StringVar(&opts.login, FlagLogin, "", "")
-	flag.StringVar(&opts.password, FlagPassword, "", "")
-	flag.Var(&opts.api, FlagAPI, "")
-	flag.DurationVar(&opts.timeout, FlagTimeout, -1, "")
+	for _, s := range FlagHelp.Names() {
+		flag.BoolVar(&isHelp, s, false, "")
+	}
+	for _, s := range FlagVersion.Names() {
+		flag.BoolVar(&isVersion, s, false, "")
+	}
+	for _, s := range FlagConfig.Names() {
+		flag.Var(&opts.config, s, "")
+	}
+	for _, s := range FlagLogin.Names() {
+		flag.StringVar(&opts.login, s, "", "")
+	}
+	for _, s := range FlagPassword.Names() {
+		flag.StringVar(&opts.password, s, "", "")
+	}
+	for _, s := range FlagAPI.Names() {
+		flag.Var(&opts.api, s, "")
+	}
+	for _, s := range FlagTimeout.Names() {
+		flag.DurationVar(&opts.timeout, s, -1, "")
+	}
 	flag.Parse()
-	if *isHelp {
+	if isHelp {
 		flag.Usage()
 		os.Exit(ExOk)
 	}
-	if *isVersion {
+	if isVersion {
 		fmt.Println(multifonapi.Version)
 		os.Exit(ExOk)
 	}
 	if !parseIdentity(&opts.login, opts.config.Login, EnvLogin) {
-		fatalParseArg(MetaVarLogin, opts.login)
+		fatalParseArg(FlagLogin.MetaVar(), opts.login)
 	}
 	if !parseIdentity(&opts.password, opts.config.Password, EnvPassword) {
-		fatalParseArg(MetaVarPassword, opts.password)
+		fatalParseArg(FlagPassword.MetaVar(), opts.password)
 	}
 	parseCommand(opts)
 	parseCommandArg(opts)

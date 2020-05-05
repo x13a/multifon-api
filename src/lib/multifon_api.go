@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Version = "0.1.11"
+	Version = "0.1.12"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -212,7 +212,7 @@ func (c *Client) Do(
 	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < 600 {
 		return &HTTPStatusError{resp.StatusCode, resp.Status}
 	}
-	if err := xml.NewDecoder(resp.Body).Decode(data); err != nil {
+	if err = xml.NewDecoder(resp.Body).Decode(data); err != nil {
 		return err
 	}
 	return data.ResultError()
@@ -304,9 +304,6 @@ func NewClient(
 	api API,
 	httpClient *http.Client,
 ) *Client {
-	if api == "" {
-		api = DefaultAPI
-	}
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: DefaultTimeout}
 	}
@@ -314,6 +311,9 @@ func NewClient(
 		login:      login,
 		password:   password,
 		httpClient: httpClient,
+	}
+	if api == "" {
+		api = DefaultAPI
 	}
 	c.SetAPI(api)
 	return c

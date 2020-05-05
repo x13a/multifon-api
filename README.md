@@ -21,19 +21,19 @@ multifon-api [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
 [-h] * Print help and exit
 [-V] * Print version and exit
 
-CONFIG:
+-c, -config:
   filepath (stdin: -)
 
-LOGIN:
+-l, -login:
   string (env: MULTIFON_LOGIN)
 
-PASSWORD:
+-p, -password:
   string (env: MULTIFON_PASSWORD)
 
-API:
+-a, -api:
   { emotion | multifon } (default: multifon)
 
-TIMEOUT:
+-t, -timeout:
   time.ParseDuration (default: 32s)
 
 COMMAND:
@@ -43,8 +43,8 @@ COMMAND_ARGUMENT:
   routing { GSM | SIP | SIP+GSM }
   lines <NUMBER> (2 .. 20)
   set-password <NEW_PASSWORD>
-	tip: min 8, max 20, mixed case, digits
-	env: MULTIFON_NEW_PASSWORD
+      tip: 8 <= x <= 20, mixed case, digits
+      env: MULTIFON_NEW_PASSWORD
 ```
 
 ## Example
