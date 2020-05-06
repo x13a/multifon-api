@@ -1,14 +1,14 @@
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 NAME := multifon-api
-SOURCE_DIR := ./src
+SRCDIR := ./src
 TARGET_DIR := ./target
 TARGET := $(TARGET_DIR)/$(NAME)
 
 all: build
 
 build:
-	go build -o $(TARGET) $(SOURCE_DIR)
+	go build -o $(TARGET) $(SRCDIR)
 
 install:
 	install -d $(BINDIR)/
@@ -21,4 +21,4 @@ clean:
 	rm -rf $(TARGET_DIR)/
 
 test:
-	go test $(SOURCE_DIR)/lib -skipass
+	go test $(SRCDIR)/lib -skipass
