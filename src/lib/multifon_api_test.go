@@ -12,9 +12,16 @@ import (
 	"time"
 )
 
+const (
+	FlagConfig  = "config"
+	FlagSkipass = "skipass"
+)
+
 var (
 	ConfigPath = filepath.Join("testdata", "conf.json")
 	Config     ConfigType
+
+	Skipass bool
 )
 
 type DescriptionResponse interface {
@@ -30,9 +37,15 @@ type ConfigType struct {
 func parseFlag() {
 	flag.StringVar(
 		&ConfigPath,
-		"config",
+		FlagConfig,
 		ConfigPath,
 		"Path to configuration file",
+	)
+	flag.BoolVar(
+		&Skipass,
+		FlagSkipass,
+		false,
+		"Skip `SetPassword` test",
 	)
 	flag.Parse()
 }
@@ -82,6 +95,7 @@ func delay() {
 func get(t *testing.T, name string) {
 	fnName := getFnName(name)
 	for api := range APIUrlMap {
+		api := api
 		t.Run(api.String(), func(t *testing.T) {
 			if obj, ok := getCall(t, newClient(api), fnName).
 				Interface().(DescriptionResponse); ok &&
@@ -107,6 +121,7 @@ func set(t *testing.T, name string, values []interface{}) {
 		}
 	}
 	for api := range APIUrlMap {
+		api := api
 		t.Run(api.String(), func(t *testing.T) {
 			c := newClient(api)
 			initVal := getCall(t, c, getFnName).
@@ -169,10 +184,14 @@ func TestSetLines(t *testing.T) {
 }
 
 func TestSetPassword(t *testing.T) {
+	if Skipass {
+		t.SkipNow()
+	}
 	if Config.NewPassword == "" {
 		t.Fatal("new_password required")
 	}
 	for api := range APIUrlMap {
+		api := api
 		t.Run(api.String(), func(t *testing.T) {
 			c := newClient(api)
 			for _, password := range [...]string{
