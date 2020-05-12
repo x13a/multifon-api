@@ -24,12 +24,13 @@ const (
 	CommandLines       = "lines"
 	CommandSetPassword = "set-password"
 
-	EnvLogin       = "MULTIFON_LOGIN"
-	EnvPassword    = "MULTIFON_PASSWORD"
-	EnvNewPassword = "MULTIFON_NEW_PASSWORD"
+	envPrefix      = "MULTIFON_"
+	EnvLogin       = envPrefix + "LOGIN"
+	EnvPassword    = envPrefix + "PASSWORD"
+	EnvNewPassword = envPrefix + "NEW_PASSWORD"
 
 	MetaVarCommand    = "COMMAND"
-	MetaVarCommandArg = "COMMAND_ARGUMENT"
+	MetaVarCommandArg = MetaVarCommand + "_ARGUMENT"
 
 	ExOk     = 0
 	ExErr    = 1
