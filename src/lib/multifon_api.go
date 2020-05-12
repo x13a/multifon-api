@@ -54,7 +54,7 @@ type ResultError struct {
 }
 
 func (e *ResultError) Error() string {
-	return fmt.Sprintf("%d: %s", e.Code, e.Description)
+	return strconv.Itoa(e.Code) + ": " + e.Description
 }
 
 type HTTPStatusError struct {
