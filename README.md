@@ -113,7 +113,5 @@ func main() {
 
 	// Switching api
 	client.SetAPI(multifonapi.APIMultifon)
-
-	// Other things look in lib/multifon_api.go and at the end of main.go 
 }
 ```
