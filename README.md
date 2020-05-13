@@ -68,3 +68,52 @@ To set lines (env identity, **space before first variable!**):
 ```sh
 $  MULTIFON_LOGIN="login" MULTIFON_PASSWORD="password" multifon-api lines 2
 ```
+
+## Library
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+
+	multifonapi "bitbucket.org/x31a/multifon-api/src/lib"
+)
+
+func main() {
+	login := "login"
+	password := "password"
+
+	// Default client
+	client := multifonapi.NewClient(login, password, "", nil)
+
+	// Requesting balance
+	res, err := client.GetBalance(context.Background())
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	fmt.Println(res.Balance)
+
+	// Custom client
+	client = multifonapi.NewClient(
+		login,
+		password,
+		multifonapi.APIEmotion,
+		&http.Client{Timeout: 5 * time.Second},
+	)
+
+	// Setting routing
+	_, err = client.SetRouting(context.Background(), multifonapi.RoutingGSM)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	// Switching api
+	client.SetAPI(multifonapi.APIMultifon)
+
+	// Other things look in lib/multifon_api.go and at the end of main.go 
+}
+```
