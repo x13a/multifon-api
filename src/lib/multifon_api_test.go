@@ -75,7 +75,7 @@ func reflectError(v []reflect.Value) error {
 func getCall(t *testing.T, c *Client, name string) reflect.Value {
 	v := call(c, name, context.Background())
 	if err := reflectError(v); err != nil {
-		t.Fatal(err.Error())
+		t.Fatal(err)
 	}
 	return v[0]
 }
@@ -117,7 +117,7 @@ func set(t *testing.T, name string, values []interface{}) {
 			context.Background(),
 			v,
 		)); err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 	}
 	for api := range APIUrlMap {
@@ -144,7 +144,7 @@ func set(t *testing.T, name string, values []interface{}) {
 func TestMain(m *testing.M) {
 	parseFlag()
 	if err := loadConfig(); err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalln(err)
 	}
 	if Config.Login == "" {
 		log.Fatalln("login required")
@@ -202,7 +202,7 @@ func TestSetPassword(t *testing.T) {
 					context.Background(),
 					password,
 				); err != nil {
-					t.Fatal(err.Error())
+					t.Fatal(err)
 				}
 				delay()
 			}

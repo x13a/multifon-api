@@ -450,7 +450,7 @@ func main() {
 	)
 	fatalIfErr := func(err error) {
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(ExErr)
 		}
 	}
