@@ -146,6 +146,10 @@ func (a API) String() string {
 }
 
 func (a *API) Set(s string) error {
+	if s == "" {
+		*a = API(multifonapi.DefaultAPI)
+		return nil
+	}
 	api := multifonapi.API(strings.ToLower(s))
 	if _, ok := multifonapi.APIUrlMap[api]; ok {
 		*a = API(api)
