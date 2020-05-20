@@ -93,7 +93,7 @@ func main() {
 	// Requesting balance
 	res, err := client.GetBalance(context.Background())
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalln(err)
 	}
 	fmt.Println(res.Balance)
 
@@ -108,7 +108,7 @@ func main() {
 	// Setting routing
 	_, err = client.SetRouting(context.Background(), multifonapi.RoutingGSM)
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalln(err)
 	}
 
 	// Switching api
