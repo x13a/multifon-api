@@ -8,7 +8,7 @@ TARGET := $(TARGET_DIR)/$(NAME)
 all: build
 
 build:
-	go build -o $(TARGET) $(SRCDIR)
+	go build -o $(TARGET) $(SRCDIR)/
 
 install:
 	install -d $(BINDIR)/
