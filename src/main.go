@@ -117,6 +117,10 @@ func (d Duration) String() string {
 }
 
 func (d *Duration) Set(s string) error {
+	if s == "" {
+		*d = Duration(multifonapi.DefaultTimeout)
+		return nil
+	}
 	v, err := time.ParseDuration(s)
 	if err != nil {
 		return err
