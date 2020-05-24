@@ -32,21 +32,21 @@ const (
 	MetaVarCommand    = "COMMAND"
 	MetaVarCommandArg = MetaVarCommand + "_ARGUMENT"
 
-	ExOk     = 0
-	ExErr    = 1
-	ExArgErr = 2 // golang flag error exit code
+	ExitSuccess = 0
+	ExitFailure = 1
+	ExitUsage   = 2
 
 	ArgStdin = "-"
 )
 
 var (
-	FlagHelp     = NewFlag("", "help")
-	FlagVersion  = NewFlag("V", "version")
-	FlagConfig   = NewFlag("", "config")
-	FlagLogin    = NewFlag("", "login")
-	FlagPassword = NewFlag("", "password")
-	FlagAPI      = NewFlag("", "api")
-	FlagTimeout  = NewFlag("", "timeout")
+	FlagHelp     = MakeFlag("", "help")
+	FlagVersion  = MakeFlag("V", "version")
+	FlagConfig   = MakeFlag("", "config")
+	FlagLogin    = MakeFlag("", "login")
+	FlagPassword = MakeFlag("", "password")
+	FlagAPI      = MakeFlag("", "api")
+	FlagTimeout  = MakeFlag("", "timeout")
 
 	Commands = [...]string{
 		CommandBalance,
@@ -71,7 +71,7 @@ func (f Flag) MetaVar() string {
 	return strings.ToUpper(f.LongName)
 }
 
-func NewFlag(short, long string) Flag {
+func MakeFlag(short, long string) Flag {
 	if short == "" {
 		short = long[:1]
 	}
@@ -87,7 +87,7 @@ type Config struct {
 	path        string
 }
 
-func (c Config) String() string {
+func (c *Config) String() string {
 	return ""
 }
 
@@ -182,7 +182,7 @@ func getAPIChoices() []string {
 	res := make([]string, len(multifonapi.APIUrlMap))
 	i := 0
 	for k := range multifonapi.APIUrlMap {
-		res[i] = k.String()
+		res[i] = string(k)
 		i++
 	}
 	return res
@@ -220,7 +220,7 @@ func format(s string, m map[string]interface{}) string {
 
 func printUsage() {
 	var name string
-	if len(os.Args) < 1 {
+	if len(os.Args) == 0 {
 		name = "PROG_NAME"
 	} else {
 		name = filepath.Base(os.Args[0])
@@ -301,7 +301,7 @@ func printUsage() {
 
 func fatalParseArg(k, v string) {
 	fmt.Fprintf(os.Stderr, "Failed to parse argument <%s>: `%s`\n", k, v)
-	os.Exit(ExArgErr)
+	os.Exit(ExitUsage)
 }
 
 func parseCommand(opts *Opts) {
@@ -372,7 +372,7 @@ func parseArgs() *Opts {
 	flag.Usage = printUsage
 	if len(os.Args) < 2 {
 		flag.Usage()
-		os.Exit(ExArgErr)
+		os.Exit(ExitUsage)
 	}
 	var isHelp bool
 	var isVersion bool
@@ -401,11 +401,11 @@ func parseArgs() *Opts {
 	flag.Parse()
 	if isHelp {
 		flag.Usage()
-		os.Exit(ExOk)
+		os.Exit(ExitSuccess)
 	}
 	if isVersion {
 		fmt.Println(multifonapi.Version)
-		os.Exit(ExOk)
+		os.Exit(ExitSuccess)
 	}
 	if !parseIdentity(&opts.login, opts.config.Login, EnvLogin) {
 		fatalParseArg(FlagLogin.MetaVar(), opts.login)
@@ -459,7 +459,7 @@ func main() {
 	fatalIfErr := func(err error) {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(ExErr)
+			os.Exit(ExitFailure)
 		}
 	}
 	ctx := context.Background()

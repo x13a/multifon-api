@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Version = "0.1.15"
+	Version = "0.1.16"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -43,10 +43,6 @@ type (
 	API     string
 	Routing int
 )
-
-func (a API) String() string {
-	return string(a)
-}
 
 type ResultError struct {
 	Code        int
