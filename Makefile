@@ -21,4 +21,4 @@ clean:
 	rm -rf $(TARGET_DIR)/
 
 test:
-	go test -v $(SRCDIR)/lib -skipass
+	go test -v $(SRCDIR)/multifon -skipass

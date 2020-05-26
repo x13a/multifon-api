@@ -80,7 +80,7 @@ import (
 	"net/http"
 	"time"
 
-	multifonapi "bitbucket.org/x31a/multifon-api/src/lib"
+	"bitbucket.org/x31a/multifon-api/src/multifon"
 )
 
 func main() {
@@ -88,7 +88,7 @@ func main() {
 	password := "password"
 
 	// Default client
-	client := multifonapi.NewClient(login, password, "", nil)
+	client := multifon.NewClient(login, password, "", nil)
 
 	// Requesting balance
 	res, err := client.GetBalance(context.Background())
@@ -98,20 +98,20 @@ func main() {
 	fmt.Println(res.Balance)
 
 	// Custom client
-	client = multifonapi.NewClient(
+	client = multifon.NewClient(
 		login,
 		password,
-		multifonapi.APIEmotion,
+		multifon.APIEmotion,
 		&http.Client{Timeout: 5 * time.Second},
 	)
 
 	// Setting routing
-	_, err = client.SetRouting(context.Background(), multifonapi.RoutingGSM)
+	_, err = client.SetRouting(context.Background(), multifon.RoutingGSM)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	// Switching api
-	client.SetAPI(multifonapi.APIMultifon)
+	client.SetAPI(multifon.APIMultifon)
 }
 ```

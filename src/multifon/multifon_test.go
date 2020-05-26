@@ -1,4 +1,4 @@
-package multifonapi
+package multifon
 
 import (
 	"context"

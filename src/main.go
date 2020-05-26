@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	multifonapi "./lib"
+	"./multifon"
 )
 
 const (
@@ -109,7 +109,7 @@ func (c *Config) Set(s string) error {
 
 type (
 	Duration time.Duration
-	API      multifonapi.API
+	API      multifon.API
 )
 
 func (d Duration) String() string {
@@ -118,7 +118,7 @@ func (d Duration) String() string {
 
 func (d *Duration) Set(s string) error {
 	if s == "" {
-		*d = Duration(multifonapi.DefaultTimeout)
+		*d = Duration(multifon.DefaultTimeout)
 		return nil
 	}
 	v, err := time.ParseDuration(s)
@@ -151,11 +151,11 @@ func (a API) String() string {
 
 func (a *API) Set(s string) error {
 	if s == "" {
-		*a = API(multifonapi.DefaultAPI)
+		*a = API(multifon.DefaultAPI)
 		return nil
 	}
-	api := multifonapi.API(strings.ToLower(s))
-	if _, ok := multifonapi.APIUrlMap[api]; ok {
+	api := multifon.API(strings.ToLower(s))
+	if _, ok := multifon.APIUrlMap[api]; ok {
 		*a = API(api)
 		return nil
 	}
@@ -174,14 +174,14 @@ func (a *API) UnmarshalJSON(b []byte) error {
 	return a.Set(s)
 }
 
-func (a API) Unwrap() multifonapi.API {
-	return multifonapi.API(a)
+func (a API) Unwrap() multifon.API {
+	return multifon.API(a)
 }
 
 func getAPIChoices() []string {
-	res := make([]string, len(multifonapi.APIUrlMap))
+	res := make([]string, len(multifon.APIUrlMap))
 	i := 0
-	for k := range multifonapi.APIUrlMap {
+	for k := range multifon.APIUrlMap {
 		res[i] = string(k)
 		i++
 	}
@@ -189,17 +189,17 @@ func getAPIChoices() []string {
 }
 
 func getRoutingDescriptions() []string {
-	res := make([]string, len(multifonapi.RoutingDescriptionMap))
+	res := make([]string, len(multifon.RoutingDescriptionMap))
 	i := 0
-	for _, v := range multifonapi.RoutingDescriptionMap {
+	for _, v := range multifon.RoutingDescriptionMap {
 		res[i] = v
 		i++
 	}
 	return res
 }
 
-func getRoutingByDescription(s string) multifonapi.Routing {
-	for k, v := range multifonapi.RoutingDescriptionMap {
+func getRoutingByDescription(s string) multifon.Routing {
+	for k, v := range multifon.RoutingDescriptionMap {
 		if v == s {
 			return k
 		}
@@ -236,8 +236,8 @@ func printUsage() {
 		"CMD":    MetaVarCommand,
 		"CMDARG": MetaVarCommandArg,
 		"STDIN":  ArgStdin,
-		"DEFA":   multifonapi.DefaultAPI,
-		"DEFT":   multifonapi.DefaultTimeout,
+		"DEFA":   multifon.DefaultAPI,
+		"DEFT":   multifon.DefaultTimeout,
 		"ENVL":   EnvLogin,
 		"ENVP":   EnvPassword,
 		"ENVNP":  EnvNewPassword,
@@ -404,7 +404,7 @@ func parseArgs() *Opts {
 		os.Exit(ExitSuccess)
 	}
 	if isVersion {
-		fmt.Println(multifonapi.Version)
+		fmt.Println(multifon.Version)
 		os.Exit(ExitSuccess)
 	}
 	if !parseIdentity(&opts.login, opts.config.Login, EnvLogin) {
@@ -450,7 +450,7 @@ func main() {
 	if opts.timeout >= 0 {
 		httpClient = &http.Client{Timeout: opts.timeout}
 	}
-	client := multifonapi.NewClient(
+	client := multifon.NewClient(
 		opts.login,
 		opts.password,
 		opts.api.Unwrap(),
@@ -482,7 +482,7 @@ func main() {
 		} else {
 			_, err := client.SetRouting(
 				ctx,
-				opts.commandArg.(multifonapi.Routing),
+				opts.commandArg.(multifon.Routing),
 			)
 			fatalIfErr(err)
 			fmt.Println(strOk)

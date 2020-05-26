@@ -1,4 +1,4 @@
-package multifonapi
+package multifon
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Version = "0.1.16"
+	Version = "0.1.17"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
