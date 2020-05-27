@@ -15,8 +15,8 @@ $ brew install x31a/tap/multifon-api
 
 ## Usage
 ```text
-multifon-api [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
-             [-api <API>] [-timeout <TIMEOUT>] <COMMAND> [<COMMAND_ARGUMENT>]
+multifon [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
+         [-api <API>] [-timeout <TIMEOUT>] <COMMAND> [<COMMAND_ARGUMENT>]
 
 [-h] * Print help and exit
 [-V] * Print version and exit
@@ -31,10 +31,10 @@ multifon-api [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
   string (env: MULTIFON_PASSWORD)
 
 -a, -api:
-  { emotion | multifon } (default: multifon)
+  { emotion | multifon } (default: multifon, env: MULTIFON_API)
 
 -t, -timeout:
-  time.ParseDuration (default: 32s)
+  time.ParseDuration (default: 32s, env: MULTIFON_TIMEOUT)
 
 COMMAND:
   { balance | routing | status | profile | lines | set-password }
@@ -51,22 +51,22 @@ COMMAND_ARGUMENT:
 
 To get balance:
 ```sh
-$ multifon-api -config ~/multifon-api.json balance
+$ multifon -config ~/multifon.json balance
 ```
 
 To set routing:
 ```sh
-$ multifon-api -config ~/multifon-api.json routing gsm
+$ multifon -config ~/multifon.json routing gsm
 ```
 
 To get status (stdin config):
 ```sh
-$ cat ~/multifon-api.json | multifon-api -config - status
+$ cat ~/multifon.json | multifon -config - status
 ```
 
 To set lines (env identity, **space before first variable!**):
 ```sh
-$  MULTIFON_LOGIN="login" MULTIFON_PASSWORD="password" multifon-api lines 2
+$  MULTIFON_LOGIN="login" MULTIFON_PASSWORD="password" multifon lines 2
 ```
 
 ## Library

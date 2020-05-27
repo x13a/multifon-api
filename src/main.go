@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -27,6 +28,8 @@ const (
 	envPrefix      = "MULTIFON_"
 	EnvLogin       = envPrefix + "LOGIN"
 	EnvPassword    = envPrefix + "PASSWORD"
+	EnvAPI         = envPrefix + "API"
+	EnvTimeout     = envPrefix + "TIMEOUT"
 	EnvNewPassword = envPrefix + "NEW_PASSWORD"
 
 	MetaVarCommand    = "COMMAND"
@@ -240,6 +243,8 @@ func printUsage() {
 		"DEFT":   multifon.DefaultTimeout,
 		"ENVL":   EnvLogin,
 		"ENVP":   EnvPassword,
+		"ENVA":   EnvAPI,
+		"ENVT":   EnvTimeout,
 		"ENVNP":  EnvNewPassword,
 		"CA":     strings.Join(apiChoices, sep),
 		"CCMD":   strings.Join(Commands[:], sep),
@@ -280,10 +285,10 @@ func printUsage() {
   string (env: {ENVP})
 
 -{a}, -{aa}:
-  { {CA} } (default: {DEFA})
+  { {CA} } (default: {DEFA}, env: {ENVA})
 
 -{t}, -{tt}:
-  time.ParseDuration (default: {DEFT})
+  time.ParseDuration (default: {DEFT}, env: {ENVT})
 
 {CMD}:
   { {CCMD} }
@@ -346,16 +351,45 @@ func parseCommandArg(opts *Opts) {
 
 func parseIdentity(arg *string, configValue, envKey string) bool {
 	if *arg == "" {
-		value := configValue
-		if value == "" {
-			value = os.Getenv(envKey)
-			if value == "" {
+		val := configValue
+		if val == "" {
+			val = os.Getenv(envKey)
+			if val == "" {
 				return false
 			}
 		}
-		*arg = value
+		*arg = val
 	}
 	return true
+}
+
+func parseAPI(opts *Opts) {
+	if opts.api == "" {
+		if val := os.Getenv(EnvAPI); val != "" {
+			err := opts.api.Set(val)
+			if err == nil {
+				return
+			}
+			log.Println(err)
+		}
+		opts.api = opts.config.API
+	}
+}
+
+func parseTimeout(opts *Opts) {
+	if opts.timeout < 0 {
+		if val := os.Getenv(EnvTimeout); val != "" {
+			timeout, err := time.ParseDuration(val)
+			if err == nil {
+				opts.timeout = timeout
+				return
+			}
+			log.Println(err)
+		}
+		if opts.config.Timeout != nil {
+			opts.timeout = opts.config.Timeout.Unwrap()
+		}
+	}
 }
 
 type Opts struct {
@@ -415,12 +449,8 @@ func parseArgs() *Opts {
 	}
 	parseCommand(opts)
 	parseCommandArg(opts)
-	if opts.api == "" {
-		opts.api = opts.config.API
-	}
-	if opts.timeout < 0 && opts.config.Timeout != nil {
-		opts.timeout = opts.config.Timeout.Unwrap()
-	}
+	parseAPI(opts)
+	parseTimeout(opts)
 	return opts
 }
 

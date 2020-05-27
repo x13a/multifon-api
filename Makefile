@@ -1,7 +1,7 @@
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 SRCDIR ?= ./src
-NAME := multifon-api
+NAME := multifon
 TARGET_DIR := ./target
 TARGET := $(TARGET_DIR)/$(NAME)
 
