@@ -305,7 +305,7 @@ func printUsage() {
 }
 
 func fatalParseArg(k, v string) {
-	fmt.Fprintf(os.Stderr, "Failed to parse argument <%s>: `%s`\n", k, v)
+	fmt.Fprintf(os.Stderr, "Failed to parse argument <%s>: %q\n", k, v)
 	os.Exit(ExitUsage)
 }
 
