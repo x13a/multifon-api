@@ -13,6 +13,13 @@ $ brew tap x31a/tap https://bitbucket.org/x31a/homebrew-tap.git
 $ brew install x31a/tap/multifon-api
 ```
 
+## Security
+
+Don't forget to set right permissions for configuration file:
+```sh
+$ chmod 600 ./config/multifon.json
+```
+
 ## Usage
 ```text
 multifon [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
