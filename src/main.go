@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -366,11 +365,10 @@ func parseIdentity(arg *string, configValue, envKey string) bool {
 func parseAPI(opts *Opts) {
 	if opts.api == "" {
 		if val := os.Getenv(EnvAPI); val != "" {
-			err := opts.api.Set(val)
-			if err == nil {
+			if err := opts.api.Set(val); err == nil {
 				return
 			}
-			log.Println(err)
+			fatalParseArg(FlagAPI.MetaVar(), val)
 		}
 		opts.api = opts.config.API
 	}
@@ -379,14 +377,12 @@ func parseAPI(opts *Opts) {
 func parseTimeout(opts *Opts) {
 	if opts.timeout < 0 {
 		if val := os.Getenv(EnvTimeout); val != "" {
-			timeout, err := time.ParseDuration(val)
-			if err == nil {
+			if timeout, err := time.ParseDuration(val); err == nil {
 				opts.timeout = timeout
 				return
 			}
-			log.Println(err)
-		}
-		if opts.config.Timeout != nil {
+			fatalParseArg(FlagTimeout.MetaVar(), val)
+		} else if opts.config.Timeout != nil {
 			opts.timeout = opts.config.Timeout.Unwrap()
 		}
 	}
