@@ -96,7 +96,7 @@ func get(t *testing.T, name string) {
 	fnName := getFnName(name)
 	for api := range APIUrlMap {
 		api := api
-		t.Run(api.String(), func(t *testing.T) {
+		t.Run(string(api), func(t *testing.T) {
 			if obj, ok := getCall(t, newClient(api), fnName).
 				Interface().(DescriptionResponse); ok &&
 				obj.Description() == "" {
@@ -122,7 +122,7 @@ func set(t *testing.T, name string, values []interface{}) {
 	}
 	for api := range APIUrlMap {
 		api := api
-		t.Run(api.String(), func(t *testing.T) {
+		t.Run(string(api), func(t *testing.T) {
 			c := newClient(api)
 			initVal := getCall(t, c, getFnName).
 				Elem().
@@ -192,13 +192,13 @@ func TestSetPassword(t *testing.T) {
 	}
 	for api := range APIUrlMap {
 		api := api
-		t.Run(api.String(), func(t *testing.T) {
+		t.Run(string(api), func(t *testing.T) {
 			c := newClient(api)
 			for _, password := range [...]string{
 				Config.NewPassword,
 				Config.Password,
 			} {
-				if _, err := c.SetPassword(
+				if err := c.SetPassword(
 					context.Background(),
 					password,
 				); err != nil {

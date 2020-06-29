@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Version = "0.2.1"
+	Version = "0.3.0"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"
@@ -78,7 +78,7 @@ func (e *SetFailedError) Error() string {
 }
 
 type Response interface {
-	ResultError() error
+	Check() error
 }
 
 type ResponseResult struct {
@@ -89,7 +89,7 @@ type ResponseResult struct {
 	} `xml:"result"`
 }
 
-func (r *ResponseResult) ResultError() error {
+func (r *ResponseResult) Check() error {
 	if r.Result.Code != http.StatusOK {
 		return &ResultError{r.Result.Code, r.Result.Description}
 	}
@@ -211,7 +211,7 @@ func (c *Client) Do(
 	if err = xml.NewDecoder(resp.Body).Decode(data); err != nil {
 		return err
 	}
-	return data.ResultError()
+	return data.Check()
 }
 
 func (c *Client) GetBalance(ctx context.Context) (*ResponseBalance, error) {
@@ -227,18 +227,15 @@ func (c *Client) GetRouting(ctx context.Context) (*ResponseRouting, error) {
 /*
 RoutingGSM, RoutingSIP, RoutingSIPGSM
 */
-func (c *Client) SetRouting(
-	ctx context.Context,
-	routing Routing,
-) (*ResponseRouting, error) {
+func (c *Client) SetRouting(ctx context.Context, routing Routing) error {
 	k := "routing"
 	v := Routing(-1)
 	data := &ResponseRouting{Routing: v}
 	err := c.Do(ctx, k, map[string]string{k: strconv.Itoa(int(routing))}, data)
 	if err == nil && data.Routing != v {
-		err = &SetFailedError{k, routing, data.Routing}
+		return &SetFailedError{k, routing, data.Routing}
 	}
-	return data, err
+	return err
 }
 
 func (c *Client) GetStatus(ctx context.Context) (*ResponseStatus, error) {
@@ -262,36 +259,32 @@ func (c *Client) GetLines(ctx context.Context) (*ResponseLines, error) {
 /*
 2 .. 20
 */
-func (c *Client) SetLines(ctx context.Context, n int) (*ResponseLines, error) {
+func (c *Client) SetLines(ctx context.Context, n int) error {
 	k := "lines"
 	v := -1
 	data := &ResponseLines{Lines: v}
 	err := c.Do(ctx, k, map[string]string{k: strconv.Itoa(n)}, data)
 	if err == nil && data.Lines != v {
-		err = &SetFailedError{k, n, data.Lines}
+		return &SetFailedError{k, n, data.Lines}
 	}
-	return data, err
+	return err
 }
 
 /*
 min 8, max 20, mixed case, digits
 can return error and.. change password on server?
 */
-func (c *Client) SetPassword(
-	ctx context.Context,
-	password string,
-) (*ResponseResult, error) {
-	data := &ResponseResult{}
-	err := c.Do(
+func (c *Client) SetPassword(ctx context.Context, password string) error {
+	if err := c.Do(
 		ctx,
 		"password",
 		map[string]string{"new_password": password},
-		data,
-	)
-	if err == nil {
-		c.password = password
+		&ResponseResult{},
+	); err != nil {
+		return err
 	}
-	return data, err
+	c.password = password
+	return nil
 }
 
 func NewClient(

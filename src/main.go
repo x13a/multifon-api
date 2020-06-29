@@ -398,7 +398,7 @@ type Opts struct {
 	commandArg interface{}
 }
 
-func parseArgs() *Opts {
+func getOpts() *Opts {
 	flag.Usage = printUsage
 	if len(os.Args) < 2 {
 		flag.Usage()
@@ -471,7 +471,7 @@ func updateConfigFile(opts *Opts) error {
 }
 
 func main() {
-	opts := parseArgs()
+	opts := getOpts()
 	var httpClient *http.Client
 	if opts.timeout >= 0 {
 		httpClient = &http.Client{Timeout: opts.timeout}
@@ -506,11 +506,10 @@ func main() {
 				fmt.Println(val)
 			}
 		} else {
-			_, err := client.SetRouting(
+			fatalIfErr(client.SetRouting(
 				ctx,
 				opts.commandArg.(multifon.Routing),
-			)
-			fatalIfErr(err)
+			))
 			fmt.Println(strOk)
 		}
 	case CommandStatus:
@@ -534,13 +533,11 @@ func main() {
 			fatalIfErr(err)
 			fmt.Println(res.Lines)
 		} else {
-			_, err := client.SetLines(ctx, opts.commandArg.(int))
-			fatalIfErr(err)
+			fatalIfErr(client.SetLines(ctx, opts.commandArg.(int)))
 			fmt.Println(strOk)
 		}
 	case CommandSetPassword:
-		_, err := client.SetPassword(ctx, opts.commandArg.(string))
-		fatalIfErr(err)
+		fatalIfErr(client.SetPassword(ctx, opts.commandArg.(string)))
 		if opts.config.path != "" {
 			fatalIfErr(updateConfigFile(opts))
 		}
