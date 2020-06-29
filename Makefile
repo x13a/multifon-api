@@ -1,24 +1,35 @@
-PREFIX ?= /usr/local
-BINDIR ?= $(PREFIX)/bin
-SRCDIR ?= ./src
-NAME := multifon
-TARGET_DIR := ./target
-TARGET := $(TARGET_DIR)/$(NAME)
+NAME        := multifon
+
+prefix      ?= /usr/local
+exec_prefix ?= $(prefix)
+bindir      ?= $(exec_prefix)/bin
+datarootdir ?= $(prefix)/share
+datadir     ?= $(datarootdir)
+srcdir      ?= ./src
+
+targetdir   := ./target
+target      := $(targetdir)/$(NAME)
+bindestdir  := $(DESTDIR)$(bindir)
+datadestdir := $(DESTDIR)$(datadir)/$(NAME)
 
 all: build
 
 build:
-	go build -o $(TARGET) $(SRCDIR)/
+	go build -o $(target) $(srcdir)/
 
-install:
-	install -d $(BINDIR)/
-	install $(TARGET) $(BINDIR)/
+installdirs:
+	install -d $(bindestdir)/ $(datadestdir)/
+
+install: installdirs
+	install $(target) $(bindestdir)/
+	install -m 0600 ./config/multifon.json $(datadestdir)/
 
 uninstall:
-	rm -f $(BINDIR)/$(NAME)
+	rm -f $(bindestdir)/$(NAME)
+	rm -rf $(datadestdir)/
 
 clean:
-	rm -rf $(TARGET_DIR)/
+	rm -rf $(targetdir)/
 
 test:
-	go test -v $(SRCDIR)/multifon -skipass
+	go test -v $(srcdir)/multifon -skipass
