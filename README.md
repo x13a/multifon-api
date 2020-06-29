@@ -113,8 +113,10 @@ func main() {
 	)
 
 	// Setting routing
-	_, err = client.SetRouting(context.Background(), multifon.RoutingGSM)
-	if err != nil {
+	if err = client.SetRouting(
+		context.Background(), 
+		multifon.RoutingGSM,
+	); err != nil {
 		log.Fatalln(err)
 	}
 
