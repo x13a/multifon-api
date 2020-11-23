@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Version = "0.3.0"
+	Version = "0.3.1"
 
 	APIMultifon API = "multifon"
 	APIEmotion  API = "emotion"

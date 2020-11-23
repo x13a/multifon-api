@@ -349,6 +349,7 @@ func parseCommandArg(opts *Opts) {
 }
 
 func parseIdentity(arg *string, configValue, envKey string) bool {
+	defer os.Unsetenv(envKey)
 	if *arg == "" {
 		val := configValue
 		if val == "" {
