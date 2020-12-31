@@ -1,0 +1,26 @@
+[package]
+name = "multifon"
+version = "0.1.0"
+authors = ["lucky"]
+edition = "2018"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_repr = "0.1"
+quick-xml = { version = "0.20", features = ["serialize"] }
+
+reqwest = "0.10"
+tokio = { version = "0.2", features = ["full"] }
+
+structopt = { version = "0.3", default-features = false, optional = true }
+serde_json = { version = "1.0", optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[features]
+bin = ["structopt", "serde_json"]
+
+[[bin]]
+name = "multifon"
+required-features = ["bin"]

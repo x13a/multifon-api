@@ -3,5 +3,5 @@
 	"password": "PASSWORD",
 	"new_password": "NEW_PASSWORD",
 	"api": "multifon",
-	"timeout": "32s"
+	"timeout": "32"
 }

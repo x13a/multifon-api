@@ -22,36 +22,30 @@ $ chmod 600 ./config/multifon.json
 
 ## Usage
 ```text
-multifon [-hV] ( -config <CONFIG> | -login <LOGIN> -password <PASSWORD> )
-         [-api <API>] [-timeout <TIMEOUT>] <COMMAND> [<COMMAND_ARGUMENT>]
+multifon 0.1.0
 
-[-h] * Print help and exit
-[-V] * Print version and exit
+USAGE:
+    multifon [OPTIONS] <SUBCOMMAND>
 
--c, -config:
-  filepath (stdin: -)
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
 
--l, -login:
-  string (env: MULTIFON_LOGIN)
+OPTIONS:
+    -a, --api <api>              (env: MULTIFON_API)
+    -c, --config <config>
+    -l, --login <login>          (env: MULTIFON_LOGIN)
+    -p, --password <password>    (env: MULTIFON_PASSWORD)
+    -t, --timeout <timeout>      (env: MULTIFON_TIMEOUT)
 
--p, -password:
-  string (env: MULTIFON_PASSWORD)
-
--a, -api:
-  { emotion | multifon } (default: multifon, env: MULTIFON_API)
-
--t, -timeout:
-  time.ParseDuration (default: 32s, env: MULTIFON_TIMEOUT)
-
-COMMAND:
-  { balance | routing | status | profile | lines | set-password }
-
-COMMAND_ARGUMENT:
-  routing { GSM | SIP | SIP+GSM }
-  lines <NUMBER> (2 .. 20)
-  set-password <NEW_PASSWORD>
-      tip: 8 <= x <= 20, mixed case, digits
-      env: MULTIFON_NEW_PASSWORD
+SUBCOMMANDS:
+    balance
+    help            Prints this message or the help of the given subcommand(s)
+    lines           get / set
+    profile
+    routing         get / set
+    set-password    (env: MULTIFON_NEW_PASSWORD)
+    status
 ```
 
 ## Example
@@ -77,50 +71,15 @@ $  MULTIFON_LOGIN="login" MULTIFON_PASSWORD="password" multifon lines 2
 ```
 
 ## Library
-```go
-package main
+```rust
+use std::error;
 
-import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"time"
+use multifon::Client;
 
-	"bitbucket.org/x31a/multifon-api/src/multifon"
-)
-
-func main() {
-	login := "login"
-	password := "password"
-
-	// Default client
-	client := multifon.NewClient(login, password, "", nil)
-
-	// Requesting balance
-	res, err := client.GetBalance(context.Background())
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fmt.Println(res.Balance)
-
-	// Custom client
-	client = multifon.NewClient(
-		login,
-		password,
-		multifon.APIEmotion,
-		&http.Client{Timeout: 5 * time.Second},
-	)
-
-	// Setting routing
-	if err = client.SetRouting(
-		context.Background(), 
-		multifon.RoutingGSM,
-	); err != nil {
-		log.Fatalln(err)
-	}
-
-	// Switching api
-	client.SetAPI(multifon.APIMultifon)
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn error::Error>> {
+    let client = Client::new("LOGIN", "PASSWORD", None, None)?;
+    println!("{}", client.get_balance().await?.value());
+    Ok(())
 }
 ```
