@@ -52,17 +52,17 @@ SUBCOMMANDS:
 
 To get balance:
 ```sh
-$ multifon -config ~/multifon.json balance
+$ multifon --config ~/multifon.json balance
 ```
 
 To set routing:
 ```sh
-$ multifon -config ~/multifon.json routing gsm
+$ multifon --config ~/multifon.json routing gsm
 ```
 
 To get status (stdin config):
 ```sh
-$ cat ~/multifon.json | multifon -config - status
+$ cat ~/multifon.json | multifon --config - status
 ```
 
 To set lines (env identity, **space before first variable!**):
