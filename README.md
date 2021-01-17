@@ -22,7 +22,7 @@ $ chmod 600 ./config/multifon.json
 
 ## Usage
 ```text
-multifon 0.1.0
+multifon 0.1.1
 
 USAGE:
     multifon [OPTIONS] <SUBCOMMAND>

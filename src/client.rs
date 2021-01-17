@@ -15,6 +15,7 @@ use crate::response;
 pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum API {
     Multifon,
     Emotion,
@@ -53,7 +54,7 @@ impl FromStr for API {
     type Err = String;
 
     fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-        match s.to_uppercase().as_str() {
+        match s.to_lowercase().as_str() {
             Self::MULTIFON => Ok(Self::Multifon),
             Self::EMOTION => Ok(Self::Emotion),
             _ => Err(format!("invalid value: {}", s)),

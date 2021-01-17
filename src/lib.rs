@@ -34,7 +34,7 @@ mod tests {
 
     fn client() -> Client {
         ONCE.call_once(|| {
-            let reader = BufReader::new(File::open("./testdata/conf.json").unwrap());
+            let reader = BufReader::new(File::open("./testdata/multifon.json").unwrap());
             let config: Option<Config> = Some(serde_json::from_reader(reader).unwrap());
             unsafe {
                 CONFIG = config;
