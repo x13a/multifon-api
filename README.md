@@ -9,7 +9,7 @@ $ make install
 ```
 or
 ```sh
-$ brew tap x31a/tap https://bitbucket.org/x31a/homebrew-tap.git
+$ brew tap x31a/tap
 $ brew install x31a/tap/multifon-api
 ```
 
