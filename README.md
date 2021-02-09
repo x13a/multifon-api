@@ -9,8 +9,8 @@ $ make install
 ```
 or
 ```sh
-$ brew tap x31a/tap
-$ brew install x31a/tap/multifon-api
+$ brew tap x13a/tap
+$ brew install x13a/tap/multifon-api
 ```
 
 ## Security
